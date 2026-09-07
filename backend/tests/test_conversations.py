@@ -40,7 +40,7 @@ def patch_pipeline(monkeypatch):
 async def test_message_streams_answer_and_citations(client, patch_pipeline):
     patch_pipeline(
         [_chunk("Aurora_GT.pdf", 12, "Towing capacity is 5,000 lb.")],
-        "The towing capacity is 5,000 lb [1].",
+        "The towing capacity is 5,000 lb.",
     )
 
     resp = await client.post(

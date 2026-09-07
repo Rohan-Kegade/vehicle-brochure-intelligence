@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.schemas.chat import MessageCreate
-from app.services.generation import extract_citations, stream_answer
+from app.services.generation import collect_citations, stream_answer
 from app.services.retrieval import retrieve
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
@@ -55,16 +55,14 @@ async def create_message(
             yield _sse("done", {})
             return
 
-        parts: list[str] = []
         try:
             async for delta in stream_answer(payload.content, chunks):
-                parts.append(delta)
                 yield _sse("token", {"text": delta})
         except Exception as exc:  # surface generation failures to the client
             yield _sse("error", {"detail": str(exc)})
             return
 
-        yield _sse("citations", {"citations": extract_citations("".join(parts), chunks)})
+        yield _sse("citations", {"citations": collect_citations(chunks)})
         yield _sse("done", {})
 
     return StreamingResponse(

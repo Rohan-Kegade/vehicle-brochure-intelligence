@@ -1,12 +1,10 @@
 """Grounded generation: build a labeled-context prompt, stream Gemini's answer
-via LangChain, and turn its inline [n] markers into frontend-style citation
-strings.
+via LangChain, and derive the citation list from the retrieved passages.
 
 The LLM lives entirely behind this module — swap ``_llm`` / ``stream_answer``
 to change providers without touching the API layer.
 """
 
-import re
 from collections.abc import AsyncIterator
 from functools import lru_cache
 
@@ -18,14 +16,14 @@ from app.services.retrieval import RetrievedChunk
 
 SYSTEM_PROMPT = (
     "You are a vehicle-brochure assistant. Answer the user's question using ONLY "
-    "the numbered context passages below. After every factual sentence, add inline "
-    "citation markers like [1] or [2][3] naming the passages you used. If the "
-    "answer is not in the passages, say you don't have that information — do not "
-    "guess. Keep answers concise and specific."
+    "the numbered context passages below. If the answer is not in the passages, "
+    "say you don't have that information — do not guess. Write in plain prose: do "
+    "not add citation markers, footnotes or passage numbers like [1] — the sources "
+    "are shown to the user separately. Keep answers concise and specific."
 )
 
 _MAX_TOKENS = 1500
-_CITE_RE = re.compile(r"\[(\d+)\]")
+_MAX_CITATIONS = 5
 
 
 @lru_cache
@@ -86,15 +84,16 @@ def _pretty_title(title: str) -> str:
     return title.removesuffix(".pdf").replace("_", " ").strip()
 
 
-def extract_citations(answer: str, chunks: list[RetrievedChunk]) -> list[str]:
-    """Map the [n] markers the model emitted to `"<title> — page N"` strings,
-    in first-seen order, deduped."""
+def collect_citations(
+    chunks: list[RetrievedChunk], *, limit: int = _MAX_CITATIONS
+) -> list[str]:
+    """Turn the retrieved passages into `"<title> — page N"` strings, in
+    retrieval order, deduped and capped at ``limit``."""
     labels: list[str] = []
-    for match in _CITE_RE.finditer(answer):
-        index = int(match.group(1))
-        if 1 <= index <= len(chunks):
-            chunk = chunks[index - 1]
-            label = f"{_pretty_title(chunk.document_title)} — page {chunk.page_start}"
-            if label not in labels:
-                labels.append(label)
+    for chunk in chunks:
+        label = f"{_pretty_title(chunk.document_title)} — page {chunk.page_start}"
+        if label not in labels:
+            labels.append(label)
+        if len(labels) >= limit:
+            break
     return labels
