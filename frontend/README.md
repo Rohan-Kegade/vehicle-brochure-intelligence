@@ -35,6 +35,7 @@ Interactive pieces:
 | Add vehicle modal | Upload a file (simulated indexing run) or search / tag-filter the library and add/remove files from the chat context |
 | Files panel | Per-file pause/resume toggle, remove, "space used" meter, and an "Add another vehicle" button |
 | Composer | Suggestion chips, Enter to send, typing indicator |
+| Mobile (≤720px) | Chat fills the screen; sidebar becomes a slide-in drawer (hamburger), files panel becomes a bottom sheet (header toggle) |
 
 ## Props
 

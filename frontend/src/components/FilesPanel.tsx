@@ -12,6 +12,8 @@ interface FilesPanelProps {
   onToggleOn: (id: string) => void;
   onRemove: (id: string) => void;
   onAdd: () => void;
+  /** Dismiss the panel — used when it renders as a bottom sheet on mobile. */
+  onClose: () => void;
 }
 
 /** Right-hand rail: files feeding retrieval, indexing progress, space meter. */
@@ -27,6 +29,7 @@ export function FilesPanel({
   onToggleOn,
   onRemove,
   onAdd,
+  onClose,
 }: FilesPanelProps) {
   return (
     <aside className="rag-card rag-files">
@@ -35,6 +38,13 @@ export function FilesPanel({
         <span className="rag-files__count">
           {activeCount} of {libCount}
         </span>
+        <button
+          className="rag-dialog__close rag-only-mobile"
+          aria-label="Hide files"
+          onClick={onClose}
+        >
+          ×
+        </button>
       </div>
 
       {indexing && (

@@ -11,6 +11,10 @@ import {
 import { composeAnswer } from "./answers.ts";
 
 const DEFAULT_LATENCY = 1100;
+const MOBILE_QUERY = "(max-width: 720px)";
+
+const matchesMobile = () =>
+  typeof window !== "undefined" && !!window.matchMedia?.(MOBILE_QUERY).matches;
 
 const WELCOME: Message = {
   role: "bot",
@@ -57,6 +61,9 @@ export interface RagWorkspaceModel {
   indexPct: number;
   upload: () => void;
 
+  // viewport
+  isMobile: boolean;
+
   // sidebar / nav
   navOpen: boolean;
   toggleNav: () => void;
@@ -64,6 +71,11 @@ export interface RagWorkspaceModel {
   activeChat: string;
   selectChat: (id: string) => void;
   newChat: () => void;
+
+  // files panel (bottom sheet on mobile)
+  filesOpen: boolean;
+  toggleFiles: () => void;
+  closeFiles: () => void;
 
   // chat search palette
   chatSearchOpen: boolean;
@@ -94,7 +106,9 @@ export function useRagWorkspace({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [libOpen, setLibOpen] = useState(false);
-  const [navOpen, setNavOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(matchesMobile);
+  const [navOpen, setNavOpen] = useState(() => !matchesMobile());
+  const [filesOpen, setFilesOpen] = useState(false);
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
   const [chatQuery, setChatQuery] = useState("");
   const [activeChat, setActiveChat] = useState("c1");
@@ -153,6 +167,19 @@ export function useRagWorkspace({
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, typing]);
+
+  // track viewport class; collapse the nav when shrinking to mobile,
+  // restore it when growing back to desktop
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const onChange = () => {
+      setIsMobile(mq.matches);
+      setNavOpen(!mq.matches);
+      if (mq.matches) setFilesOpen(false);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   const send = useCallback(
     (raw: string) => {
@@ -234,12 +261,26 @@ export function useRagWorkspace({
     setDocs((d) => d.map((x) => (x.id === id ? { ...x, on: !x.on } : x)));
   }, []);
 
+  /** On phones the sidebar is a drawer — dismiss it after a nav action. */
+  const dismissDrawer = useCallback(() => {
+    if (matchesMobile()) setNavOpen(false);
+  }, []);
+
+  const selectChat = useCallback(
+    (id: string) => {
+      setActiveChat(id);
+      dismissDrawer();
+    },
+    [dismissDrawer],
+  );
+
   const newChat = useCallback(() => {
     const id = `n${Date.now()}`;
     setChats((c) => [{ id, title: "New chat", when: "Just now" }, ...c]);
     setActiveChat(id);
     reset();
-  }, [reset]);
+    dismissDrawer();
+  }, [reset, dismissDrawer]);
 
   const deleteChat = useCallback(() => {
     const rest = chats.filter((c) => c.id !== activeChat);
@@ -328,17 +369,27 @@ export function useRagWorkspace({
     indexPct,
     upload,
 
+    isMobile,
+
     navOpen,
     toggleNav: () => setNavOpen((v) => !v),
     chats,
     activeChat,
-    selectChat: setActiveChat,
+    selectChat,
     newChat,
+
+    filesOpen,
+    toggleFiles: () => setFilesOpen((v) => !v),
+    closeFiles: () => setFilesOpen(false),
 
     chatSearchOpen,
     chatQuery,
     setChatQuery,
-    openChatSearch: () => setChatSearchOpen(true),
+    openChatSearch: () => {
+      setChatSearchOpen(true);
+      setNavOpen((v) => (matchesMobile() ? false : v));
+      setFilesOpen(false);
+    },
     closeChatSearch: () => {
       setChatSearchOpen(false);
       setChatQuery("");
@@ -346,7 +397,10 @@ export function useRagWorkspace({
     chatResults,
 
     libOpen,
-    openLib: () => setLibOpen(true),
+    openLib: () => {
+      setLibOpen(true);
+      setFilesOpen(false);
+    },
     closeLib: () => {
       setLibOpen(false);
       setQuery("");
