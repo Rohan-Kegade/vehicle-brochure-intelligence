@@ -66,8 +66,9 @@ async def stream_answer(
         system_instruction=SYSTEM_PROMPT,
         max_output_tokens=_MAX_TOKENS,
         temperature=0.2,
-        # Disable "thinking" for snappy first-token streaming (Gemini 2.5 Flash).
-        thinking_config=types.ThinkingConfig(thinking_budget=0),
+        # Keep thinking minimal for snappy first-token streaming. Gemini 3.x
+        # rejects thinking_budget=0, so use the "low" thinking level instead.
+        thinking_config=types.ThinkingConfig(thinking_level="low"),
     )
     stream = await client.aio.models.generate_content_stream(
         model=get_settings().gemini_model,
