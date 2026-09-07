@@ -30,7 +30,7 @@ const scrim =
   "hidden fixed inset-0 border-0 bg-overlay cursor-pointer max-phone:block max-phone:opacity-0 max-phone:pointer-events-none max-phone:transition-opacity max-phone:duration-200";
 
 /**
- * "Ask My Documents" — a retrieval-augmented chat workspace.
+ * "Ask My Brochures" — a retrieval-augmented chat workspace over vehicle brochures.
  */
 export function RagWorkspace(props: RagWorkspaceProps) {
   const w = useRagWorkspace(props);
@@ -118,7 +118,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
 
             <button
               className={`${toolBtn} ${toolBtnHover} p-[9px] ${onlyMobile}`}
-              aria-label="Show files in use"
+              aria-label="Show brochures in use"
               aria-pressed={w.filesOpen}
               onClick={w.toggleFiles}
             >
@@ -176,8 +176,6 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           <FilesPanel
             contextDocs={w.contextDocs}
             activeCount={w.activeCount}
-            libCount={w.libCount}
-            ctxPct={w.ctxPct}
             onToggleOn={w.toggleOn}
             onRemove={w.toggleAdd}
             onAdd={w.openLib}
@@ -189,7 +187,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
       <button
         type="button"
         className={`${scrim} max-phone:z-[74] group-data-[files=open]/shell:max-phone:opacity-100 group-data-[files=open]/shell:max-phone:pointer-events-auto`}
-        aria-label="Hide files"
+        aria-label="Hide brochures"
         tabIndex={-1}
         onClick={w.closeFiles}
       />

@@ -1,11 +1,10 @@
 import type { Doc } from "../types.ts";
+import { MAX_CONTEXT } from "../data.ts";
 import { card, cardLabel, dialogCloseBase, onlyMobile, track, trackFill } from "./ui.ts";
 
 interface FilesPanelProps {
   contextDocs: Doc[];
   activeCount: number;
-  libCount: number;
-  ctxPct: string;
   onToggleOn: (id: string) => void;
   onRemove: (id: string) => void;
   onAdd: () => void;
@@ -13,30 +12,31 @@ interface FilesPanelProps {
   onClose: () => void;
 }
 
-/** Right-hand rail: files feeding retrieval and the space meter. Upload
- * progress lives in the library modal, not here. */
+/** Right-hand rail: brochures feeding retrieval and the context-limit meter.
+ * Upload progress lives in the library modal, not here. */
 export function FilesPanel({
   contextDocs,
   activeCount,
-  libCount,
-  ctxPct,
   onToggleOn,
   onRemove,
   onAdd,
   onClose,
 }: FilesPanelProps) {
+  const used = contextDocs.length;
+  const limitPct = `${Math.min(100, (used / MAX_CONTEXT) * 100)}%`;
+
   return (
     <aside
       className={`${card} flex-[0_1_340px] min-w-[248px] max-w-[380px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:fixed max-phone:left-0 max-phone:right-0 max-phone:bottom-0 max-phone:top-auto max-phone:w-auto max-phone:min-w-0 max-phone:max-w-none max-phone:max-h-[82dvh] max-phone:z-[75] max-phone:rounded-b-none max-phone:border-b-0 max-phone:shadow-dialog max-phone:translate-y-[101%] max-phone:transition-transform max-phone:duration-[250ms] group-data-[files=open]/shell:max-phone:translate-y-0`}
     >
       <div className="flex-none flex items-center justify-between gap-2.5 px-[15px] py-[13px] border-b border-line bg-bar-tint max-phone:pt-[15px]">
-        <span className={`${cardLabel} text-accent-text-soft`}>Files in use</span>
+        <span className={`${cardLabel} text-accent-text-soft`}>Brochures in use</span>
         <span className="font-mono text-[10.5px] text-text-muted">
-          {activeCount} of {libCount}
+          {activeCount} of {used}
         </span>
         <button
           className={`${dialogCloseBase} w-7 h-7 rounded-[8px] text-[14px] ${onlyMobile}`}
-          aria-label="Hide files"
+          aria-label="Hide brochures"
           onClick={onClose}
         >
           ×
@@ -64,7 +64,7 @@ export function FilesPanel({
                         ? "border-accent-line bg-accent-tint-hi justify-end"
                         : "border-line-4 bg-track justify-start"
                     }`}
-                    title="Pause or use this file"
+                    title="Pause or use this brochure"
                     aria-pressed={d.on}
                     onClick={() => onToggleOn(d.id)}
                   >
@@ -76,7 +76,7 @@ export function FilesPanel({
                   </button>
                   <button
                     className="w-6 h-6 rounded-[7px] border border-line-4 bg-surface-6 text-text-faint text-[13px] leading-none cursor-pointer hover:border-line-hover hover:text-text"
-                    title="Remove this file"
+                    title="Remove this brochure"
                     onClick={() => onRemove(d.id)}
                   >
                     ×
@@ -88,7 +88,7 @@ export function FilesPanel({
 
           {contextDocs.length === 0 && (
             <div className="py-4 px-[13px] border border-dashed border-line-4 rounded-[12px]">
-              <div className="text-[13px] text-text-dim">No files added yet</div>
+              <div className="text-[13px] text-text-dim">No brochures added yet</div>
               <div className="text-[12px] text-text-ghost mt-[5px] leading-[1.5]">
                 Use the Add vehicle button below to pick one from your library or upload a PDF.
               </div>
@@ -107,14 +107,16 @@ export function FilesPanel({
         <div className="flex-none px-[15px] pt-[11px] pb-[13px] border-t border-line">
           <div className="flex items-baseline justify-between gap-2.5">
             <span className="font-mono text-[9.5px] tracking-[0.1em] text-text-muted">
-              Space used
+              Limit utilized
             </span>
-            <span className="font-mono text-[10px] text-text-soft">{ctxPct}</span>
+            <span className="font-mono text-[10px] text-text-soft">
+              {used} / {MAX_CONTEXT}
+            </span>
           </div>
           <div className={`${track} h-[4px] mt-[9px]`}>
             <div
               className={`${trackFill} bg-accent duration-[400ms]`}
-              style={{ width: ctxPct }}
+              style={{ width: limitPct }}
             />
           </div>
         </div>

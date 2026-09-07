@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Chat, Doc, Message, RagWorkspaceProps, RetrievalMode } from "../types.ts";
-import {
-  CONTEXT_BUDGET,
-  INDEX_STAGES,
-  INITIAL_CHATS,
-  INITIAL_DOCS,
-  TOKENS_PER_CHUNK,
-  UPLOAD_NAMES,
-} from "../data.ts";
+import { INDEX_STAGES, INITIAL_CHATS, INITIAL_DOCS, MAX_CONTEXT, UPLOAD_NAMES } from "../data.ts";
 import { composeAnswer } from "./answers.ts";
 import {
   type DocStatus,
@@ -28,12 +21,12 @@ const matchesMobile = () =>
 
 const WELCOME_PARAS = USE_MOCK
   ? [
-      "Hi — two of your files are ready. Ask me anything about them, and I'll quote the page I got it from.",
-      "I only read the files listed on the right. If the answer isn't in them, I'll tell you instead of guessing.",
+      "Hi — two brochures are ready. Ask me anything about them, and I'll quote the page I got it from.",
+      "I only read the brochures listed on the right. If the answer isn't in them, I'll tell you instead of guessing.",
     ]
   : [
       "Hi — add a brochure with the “Add vehicle” button on the right, then ask me anything about it and I'll quote the page I read it from.",
-      "I only answer from the files you've added. If it's not in them, I'll say so instead of guessing.",
+      "I only answer from the brochures you've added. If it's not in them, I'll say so instead of guessing.",
     ];
 
 /** Backend ingest status -> [label, percent] for the indexing banner. */
@@ -69,9 +62,6 @@ export interface RagWorkspaceModel {
   docs: Doc[];
   contextDocs: Doc[];
   activeCount: number;
-  libCount: number;
-  ctxChunks: number;
-  ctxPct: string;
   toggleAdd: (id: string) => void;
   toggleOn: (id: string) => void;
 
@@ -235,7 +225,7 @@ export function useRagWorkspace({
       if (!live.length) {
         push({
           paras: [
-            "No files are in use right now, so there's nothing for me to read.",
+            "No brochures are in use right now, so there's nothing for me to read.",
             "Use the “Add vehicle” button on the right to pick one from your library or upload a PDF, then ask me again.",
           ],
         });
@@ -412,7 +402,13 @@ export function useRagWorkspace({
   }, [indexing, push, uploadReal]);
 
   const toggleAdd = useCallback((id: string) => {
-    setDocs((d) => d.map((x) => (x.id === id ? { ...x, added: !x.added, on: true } : x)));
+    setDocs((d) => {
+      const target = d.find((x) => x.id === id);
+      if (!target) return d;
+      // Cap the context at MAX_CONTEXT brochures; removing is always allowed.
+      if (!target.added && d.filter((x) => x.added).length >= MAX_CONTEXT) return d;
+      return d.map((x) => (x.id === id ? { ...x, added: !x.added, on: true } : x));
+    });
   }, []);
 
   const toggleOn = useCallback((id: string) => {
@@ -465,16 +461,6 @@ export function useRagWorkspace({
 
   const contextDocs = useMemo(() => docs.filter((d) => d.added), [docs]);
 
-  const ctxChunks = useMemo(
-    () => contextDocs.filter((d) => d.on).reduce((a, d) => a + d.chunks, 0),
-    [contextDocs],
-  );
-
-  const ctxPct = useMemo(() => {
-    const tokens = ctxChunks * TOKENS_PER_CHUNK;
-    return `${Math.min(100, (tokens / CONTEXT_BUDGET) * 100).toFixed(1)}%`;
-  }, [ctxChunks]);
-
   const activeCount = useMemo(() => contextDocs.filter((d) => d.on).length, [contextDocs]);
 
   const libraryShown = useMemo(() => {
@@ -515,9 +501,6 @@ export function useRagWorkspace({
     docs,
     contextDocs,
     activeCount,
-    libCount: docs.length,
-    ctxChunks,
-    ctxPct,
     toggleAdd,
     toggleOn,
 

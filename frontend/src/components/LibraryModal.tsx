@@ -62,7 +62,7 @@ export function LibraryModal({
           <div>
             <div className="text-[15px] font-semibold">Add vehicle</div>
             <div className="font-mono text-[10px] text-text-ghost tracking-[0.08em] mt-1">
-              Pick the files you want to chat with
+              Pick the brochures you want to chat with
             </div>
           </div>
           <button
@@ -88,7 +88,7 @@ export function LibraryModal({
                 {indexing ? "Indexing…" : "Upload a PDF"}
               </span>
               <span className="font-mono text-[10px] text-text-ghost tracking-[0.04em]">
-                Add a new file to your library and start reading it
+                Add a new brochure to your library and start reading it
               </span>
             </span>
           </button>
@@ -117,7 +117,7 @@ export function LibraryModal({
               className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[14px] py-[11px] max-phone:text-base"
               value={query}
               onChange={(e) => onQuery(e.target.value)}
-              placeholder="Search by file name…"
+              placeholder="Search by brochure name…"
             />
           </div>
           <div className="flex flex-wrap gap-1.5 mt-3">
@@ -155,7 +155,7 @@ export function LibraryModal({
                     ? "border-accent-line bg-accent-tint-2 text-accent-text-soft hover:border-line-hover"
                     : "border-line-4 bg-surface-6 text-text-dim hover:border-accent hover:text-text"
                 }`}
-                title={d.added ? "Remove this file" : undefined}
+                title={d.added ? "Remove this brochure" : undefined}
                 onClick={() => onToggleAdd(d.id)}
               >
                 {d.added ? "Added ✓" : "Add"}
@@ -169,7 +169,7 @@ export function LibraryModal({
 
         <div className="flex-none flex items-center justify-between gap-3 px-[18px] py-[13px] border-t border-line bg-bar-tint">
           <span className="font-mono text-[10.5px] text-text-faint tracking-[0.06em]">
-            {selectedCount} files selected
+            {selectedCount} brochures selected
           </span>
           <button
             className="flex-none px-[18px] py-2.5 border-0 rounded-[10px] bg-accent text-accent-ink text-[13.5px] font-semibold cursor-pointer hover:bg-accent-bright"

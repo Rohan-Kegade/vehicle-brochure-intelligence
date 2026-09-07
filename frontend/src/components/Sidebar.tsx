@@ -31,7 +31,7 @@ export function Sidebar({
           RG
         </div>
         <div className="flex-1 min-w-0 text-sm font-semibold tracking-[-0.2px] truncate">
-          Ask My Documents
+          Ask My Brochures
         </div>
         <button className={iconBtn} title="Hide menu" onClick={onCollapse}>
           ‹

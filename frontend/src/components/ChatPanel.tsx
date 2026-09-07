@@ -101,7 +101,7 @@ export function ChatPanel({
         {typing && (
           <div className="flex flex-col gap-[7px]">
             <div className="font-mono text-[10px] tracking-[0.14em] text-text-ghost">
-              Reading your files
+              Reading the brochures
             </div>
             <div className="self-start px-[18px] py-[15px] rounded-[14px] border border-line-bubble bg-surface-5 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-accent animate-blip" />
@@ -130,7 +130,7 @@ export function ChatPanel({
             value={draft}
             onChange={(e) => onDraft(e.target.value)}
             onKeyDown={onKey}
-            placeholder="Ask a question about your files…"
+            placeholder="Ask a question about these brochures…"
           />
           <button
             className="flex-none px-[18px] py-2.5 border-0 rounded-[9px] bg-accent text-accent-ink text-[13.5px] font-semibold cursor-pointer hover:bg-accent-bright disabled:opacity-55 disabled:cursor-not-allowed"
@@ -138,9 +138,6 @@ export function ChatPanel({
           >
             Ask
           </button>
-        </div>
-        <div className="font-mono text-[10px] text-text-muted tracking-[0.04em] mt-[9px]">
-          Answers come only from the files you add
         </div>
       </div>
     </section>
