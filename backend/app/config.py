@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     # Comma-separated list of allowed CORS origins.
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
+    # Infrastructure (defaults match backend/docker-compose.yml).
+    database_url: str = "postgresql+asyncpg://vbi:vbi@localhost:5433/vbi"
+    qdrant_url: str = "http://localhost:6333"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
