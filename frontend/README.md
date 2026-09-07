@@ -32,10 +32,10 @@ Interactive pieces:
 | Sidebar | Collapse to an icon rail, switch chats, start a new chat |
 | Search chats | Command palette (`⌕`) filtering recent conversations |
 | Header | Chat title with dark/light theme toggle, delete-chat, and share (copy link) actions |
-| Add vehicle modal | Upload a file (simulated indexing run) or search / tag-filter the library and add/remove files from the chat context |
-| Files panel | Per-file pause/resume toggle, remove, "space used" meter, and an "Add another vehicle" button |
+| Add vehicle brochure modal | Upload a file (simulated indexing run) or search / tag-filter the library and add/remove files from the chat context |
+| Chat context panel | Header with a "Brochures in use" count below it, per-file pause/resume toggle, remove, "space used" meter, and an "Add vehicle brochure" button |
 | Composer | Suggestion chips, Enter to send, typing indicator |
-| Mobile (≤720px) | Chat fills the screen; sidebar becomes a slide-in drawer (hamburger), files panel becomes a bottom sheet (header toggle) |
+| Mobile (≤720px) | Chat fills the screen; sidebar becomes a slide-in drawer (hamburger), the Chat context panel becomes a bottom sheet (panel icon in the Chat bar) |
 
 ## Props
 

@@ -135,7 +135,10 @@ export function apiDocToDoc(d: ApiDoc): Doc {
   return {
     id: d.id,
     title: d.title,
-    tag: d.tag ?? "Untitled",
+    tag: d.tag ?? "Unsorted",
+    make: d.make ?? "",
+    // Everything the backend stores was uploaded through the app.
+    source: "upload",
     pages: d.page_count,
     chunks: d.chunk_count,
     on: true,

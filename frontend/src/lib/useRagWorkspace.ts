@@ -19,15 +19,23 @@ const MOBILE_QUERY = "(max-width: 720px)";
 const matchesMobile = () =>
   typeof window !== "undefined" && !!window.matchMedia?.(MOBILE_QUERY).matches;
 
-const WELCOME_PARAS = USE_MOCK
-  ? [
-      "Hi — two brochures are ready. Ask me anything about them, and I'll quote the page I got it from.",
-      "I only read the brochures listed on the right. If the answer isn't in them, I'll tell you instead of guessing.",
-    ]
-  : [
-      "Hi — add a brochure with the “Add vehicle” button on the right, then ask me anything about it and I'll quote the page I read it from.",
-      "I only answer from the brochures you've added. If it's not in them, I'll say so instead of guessing.",
-    ];
+/** Where the Chat context panel lives, phrased for the current viewport:
+ * a docked rail on desktop, a bottom sheet behind the top-bar panel icon on mobile. */
+const contextPanelLocation = () =>
+  matchesMobile()
+    ? "in the Chat context panel — open it with the panel icon in the Chat bar"
+    : "in the Chat context panel on the right";
+
+const welcomeParas = () =>
+  USE_MOCK
+    ? [
+        "Hi — two brochures are ready. Ask me anything about them, and I'll quote the page I got it from.",
+        `I only read the brochures listed ${contextPanelLocation()}. If the answer isn't in them, I'll tell you instead of guessing.`,
+      ]
+    : [
+        `Hi — add a brochure with the “Add vehicle brochure” button ${contextPanelLocation()}, then ask me anything about it and I'll quote the page I read it from.`,
+        "I only answer from the brochures you've added. If it's not in them, I'll say so instead of guessing.",
+      ];
 
 /** Backend ingest status -> [label, percent] for the indexing banner. */
 const REAL_INDEX_STAGES: Record<DocStatus, [string, number]> = {
@@ -102,6 +110,10 @@ export interface RagWorkspaceModel {
   closeLib: () => void;
   query: string;
   setQuery: (v: string) => void;
+  /** Library scope: everything vs. only the user's own uploads. */
+  scope: "all" | "mine";
+  setScope: (v: "all" | "mine") => void;
+  scopeCounts: { all: number; mine: number };
   filter: string;
   setFilter: (v: string) => void;
   libraryShown: Doc[];
@@ -115,6 +127,7 @@ export function useRagWorkspace({
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<"all" | "mine">("mine");
   const [filter, setFilter] = useState("All");
   const [libOpen, setLibOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(matchesMobile);
@@ -161,7 +174,7 @@ export function useRagWorkspace({
   );
 
   const greet = useCallback(() => {
-    push({ paras: WELCOME_PARAS }, 300);
+    push({ paras: welcomeParas() }, 300);
   }, [push]);
 
   // mount: welcome message; in real mode also load the indexed library
@@ -226,7 +239,7 @@ export function useRagWorkspace({
         push({
           paras: [
             "No brochures are in use right now, so there's nothing for me to read.",
-            "Use the “Add vehicle” button on the right to pick one from your library or upload a PDF, then ask me again.",
+            `Use the “Add vehicle brochure” button ${contextPanelLocation()} to pick one from your library or upload a PDF, then ask me again.`,
           ],
         });
         return;
@@ -375,10 +388,18 @@ export function useRagWorkspace({
     let i = 0;
     const step = () => {
       if (i >= INDEX_STAGES.length) {
-        const id = `u${Date.now()}`;
-        setDocs((d) =>
-          [{ id, title: name, tag: "Uploads", pages: 29, chunks: 348, on: true, added: true }].concat(d),
-        );
+        const uploaded: Doc = {
+          id: `u${Date.now()}`,
+          title: name,
+          tag: "Unsorted",
+          make: "",
+          source: "upload",
+          pages: 29,
+          chunks: 348,
+          on: true,
+          added: true,
+        };
+        setDocs((d) => [uploaded, ...d]);
         setIndexing(false);
         push(
           {
@@ -463,14 +484,26 @@ export function useRagWorkspace({
 
   const activeCount = useMemo(() => contextDocs.filter((d) => d.on).length, [contextDocs]);
 
+  const scopeCounts = useMemo(
+    () => ({
+      all: docs.filter((d) => d.source === "sample").length,
+      mine: docs.filter((d) => d.source === "upload").length,
+    }),
+    [docs],
+  );
+
   const libraryShown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return docs.filter(
       (d) =>
+        d.source === (scope === "mine" ? "upload" : "sample") &&
         (filter === "All" || d.tag === filter) &&
-        (!q || d.title.toLowerCase().includes(q) || d.tag.toLowerCase().includes(q)),
+        (!q ||
+          d.title.toLowerCase().includes(q) ||
+          d.tag.toLowerCase().includes(q) ||
+          d.make.toLowerCase().includes(q)),
     );
-  }, [docs, query, filter]);
+  }, [docs, query, scope, filter]);
 
   const chatResults = useMemo(() => {
     const cq = chatQuery.trim().toLowerCase();
@@ -545,10 +578,14 @@ export function useRagWorkspace({
     closeLib: () => {
       setLibOpen(false);
       setQuery("");
+      setScope("mine");
       setFilter("All");
     },
     query,
     setQuery,
+    scope,
+    setScope,
+    scopeCounts,
     filter,
     setFilter,
     libraryShown,

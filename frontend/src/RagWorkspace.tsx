@@ -8,23 +8,7 @@ import { ChatPanel } from "./components/ChatPanel.tsx";
 import { FilesPanel } from "./components/FilesPanel.tsx";
 import { ChatSearchModal } from "./components/ChatSearchModal.tsx";
 import { LibraryModal } from "./components/LibraryModal.tsx";
-import { onlyMobile } from "./components/ui.ts";
-
-const svgProps = {
-  width: 15,
-  height: 15,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 1.8,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-  "aria-hidden": true,
-};
-
-const toolBtn =
-  "relative flex items-center gap-2 border border-line-4 rounded-[10px] text-[13px] text-text-toolbtn bg-surface-1 cursor-pointer [&_svg]:block";
-const toolBtnHover = "hover:border-accent hover:text-text-hi";
+import { iconSvgProps as svgProps, onlyMobile, toolBtn, toolBtnHover } from "./components/ui.ts";
 
 const scrim =
   "hidden fixed inset-0 border-0 bg-overlay cursor-pointer max-phone:block max-phone:opacity-0 max-phone:pointer-events-none max-phone:transition-opacity max-phone:duration-200";
@@ -117,23 +101,6 @@ export function RagWorkspace(props: RagWorkspaceProps) {
             </button>
 
             <button
-              className={`${toolBtn} ${toolBtnHover} p-[9px] ${onlyMobile}`}
-              aria-label="Show brochures in use"
-              aria-pressed={w.filesOpen}
-              onClick={w.toggleFiles}
-            >
-              <svg {...svgProps}>
-                <rect x="3" y="4" width="18" height="16" rx="2" />
-                <path d="M15 4v16" />
-              </svg>
-              {w.activeCount > 0 && (
-                <span className="absolute -top-[5px] -right-[5px] min-w-[15px] h-[15px] px-[3px] rounded-full bg-accent text-accent-ink font-mono text-[9px] font-semibold leading-[15px] text-center">
-                  {w.activeCount}
-                </span>
-              )}
-            </button>
-
-            <button
               className={`${toolBtn} p-[9px] hover:border-danger hover:text-danger`}
               title="Delete chat"
               aria-label="Delete chat"
@@ -172,6 +139,9 @@ export function RagWorkspace(props: RagWorkspaceProps) {
             onDraft={w.setDraft}
             onSubmit={w.submit}
             onSuggest={w.ask}
+            filesOpen={w.filesOpen}
+            activeCount={w.activeCount}
+            onToggleFiles={w.toggleFiles}
           />
           <FilesPanel
             contextDocs={w.contextDocs}
@@ -187,7 +157,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
       <button
         type="button"
         className={`${scrim} max-phone:z-[74] group-data-[files=open]/shell:max-phone:opacity-100 group-data-[files=open]/shell:max-phone:pointer-events-auto`}
-        aria-label="Hide brochures"
+        aria-label="Hide chat context"
         tabIndex={-1}
         onClick={w.closeFiles}
       />
@@ -208,6 +178,8 @@ export function RagWorkspace(props: RagWorkspaceProps) {
       {w.libOpen && (
         <LibraryModal
           query={w.query}
+          scope={w.scope}
+          scopeCounts={w.scopeCounts}
           filter={w.filter}
           shown={w.libraryShown}
           selectedCount={w.activeCount}
@@ -217,6 +189,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           indexPct={w.indexPct}
           onUpload={w.upload}
           onQuery={w.setQuery}
+          onScope={w.setScope}
           onFilter={w.setFilter}
           onToggleAdd={w.toggleAdd}
           onClose={w.closeLib}

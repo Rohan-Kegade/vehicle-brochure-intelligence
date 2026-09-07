@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Message } from "../types.ts";
 import { SUGGESTIONS } from "../data.ts";
-import { card, cardLabel } from "./ui.ts";
+import { card, cardLabel, iconSvgProps, onlyMobile, toolBtn, toolBtnHover } from "./ui.ts";
 
 /** Themed Tailwind-typography container for a rendered Markdown answer. */
 const prose =
@@ -18,6 +18,10 @@ interface ChatPanelProps {
   onDraft: (v: string) => void;
   onSubmit: () => void;
   onSuggest: (q: string) => void;
+  /** Chat-context sheet state — the toggle lives in this strip on mobile. */
+  filesOpen: boolean;
+  activeCount: number;
+  onToggleFiles: () => void;
 }
 
 function MessageRow({ m }: { m: Message }) {
@@ -74,6 +78,9 @@ export function ChatPanel({
   onDraft,
   onSubmit,
   onSuggest,
+  filesOpen,
+  activeCount,
+  onToggleFiles,
 }: ChatPanelProps) {
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -86,8 +93,24 @@ export function ChatPanel({
     <section
       className={`${card} flex-1 min-w-[280px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:flex-auto max-phone:min-w-0 max-phone:min-h-0`}
     >
-      <div className="flex-none flex items-center px-4 py-[11px] border-b border-line bg-bar-tint">
+      <div className="flex-none flex items-center justify-between gap-2 px-4 py-[11px] border-b border-line bg-bar-tint">
         <span className={cardLabel}>Chat</span>
+        <button
+          className={`${toolBtn} ${toolBtnHover} p-[7px] ${onlyMobile}`}
+          aria-label="Show chat context"
+          aria-pressed={filesOpen}
+          onClick={onToggleFiles}
+        >
+          <svg {...iconSvgProps}>
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M15 4v16" />
+          </svg>
+          {activeCount > 0 && (
+            <span className="absolute -top-[5px] -right-[5px] min-w-[15px] h-[15px] px-[3px] rounded-full bg-accent text-accent-ink font-mono text-[9px] font-semibold leading-[15px] text-center">
+              {activeCount}
+            </span>
+          )}
+        </button>
       </div>
 
       <div

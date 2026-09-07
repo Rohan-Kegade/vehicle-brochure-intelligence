@@ -9,11 +9,18 @@ export interface RagWorkspaceProps {
   latencyMs?: number;
 }
 
+/** Where a brochure came from: shipped with the app, or uploaded by the user. */
+export type DocSource = "sample" | "upload";
+
 /** A document in the user's library. */
 export interface Doc {
   id: string;
   title: string;
+  /** Body style, e.g. "SUV" / "Sedan" — drives the Type filter. */
   tag: string;
+  /** Brand / manufacturer — drives the Brand filter. Empty when unknown. */
+  make: string;
+  source: DocSource;
   pages: number;
   chunks: number;
   /** Whether the file is actively feeding retrieval (toggle switch). */

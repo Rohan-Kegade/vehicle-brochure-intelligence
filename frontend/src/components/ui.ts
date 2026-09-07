@@ -9,6 +9,25 @@ export const card =
 
 export const cardLabel = "font-mono text-[11px] tracking-[0.12em] text-accent-text";
 
+/** Icon-button recipe shared by the header actions and the chat strip's
+ * mobile "chat context" toggle. Add `toolBtnHover` for the interactive ones. */
+export const toolBtn =
+  "relative flex items-center gap-2 border border-line-4 rounded-[10px] text-[13px] text-text-toolbtn bg-surface-1 cursor-pointer [&_svg]:block";
+export const toolBtnHover = "hover:border-accent hover:text-text-hi";
+
+/** Props for the 24x24 stroke icons used inside `toolBtn`. */
+export const iconSvgProps = {
+  width: 15,
+  height: 15,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
 export const eyebrow =
   "font-mono text-[9.5px] tracking-[0.12em] text-text-muted px-[3px] pb-2";
 

@@ -12,8 +12,9 @@ interface FilesPanelProps {
   onClose: () => void;
 }
 
-/** Right-hand rail: brochures feeding retrieval and the context-limit meter.
- * Upload progress lives in the library modal, not here. */
+/** Chat context rail: brochures feeding retrieval and the context-limit meter.
+ * Docked on the right on desktop, a bottom sheet on mobile. Upload progress
+ * lives in the library modal, not here. */
 export function FilesPanel({
   contextDocs,
   activeCount,
@@ -29,18 +30,25 @@ export function FilesPanel({
     <aside
       className={`${card} flex-[0_1_340px] min-w-[248px] max-w-[380px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:fixed max-phone:left-0 max-phone:right-0 max-phone:bottom-0 max-phone:top-auto max-phone:w-auto max-phone:min-w-0 max-phone:max-w-none max-phone:max-h-[82dvh] max-phone:z-[75] max-phone:rounded-b-none max-phone:border-b-0 max-phone:shadow-dialog max-phone:translate-y-[101%] max-phone:transition-transform max-phone:duration-[250ms] group-data-[files=open]/shell:max-phone:translate-y-0`}
     >
-      <div className="flex-none flex items-center justify-between gap-2.5 px-[15px] py-[13px] border-b border-line bg-bar-tint max-phone:pt-[15px]">
-        <span className={`${cardLabel} text-accent-text-soft`}>Brochures in use</span>
-        <span className="font-mono text-[10.5px] text-text-muted">
-          {activeCount} of {used}
-        </span>
-        <button
-          className={`${dialogCloseBase} w-7 h-7 rounded-[8px] text-[14px] ${onlyMobile}`}
-          aria-label="Hide brochures"
-          onClick={onClose}
-        >
-          ×
-        </button>
+      <div className="flex-none border-b border-line bg-bar-tint">
+        <div className="flex items-center justify-between gap-2.5 px-[15px] pt-[13px] max-phone:pt-[15px]">
+          <span className={`${cardLabel} text-accent-text-soft`}>Chat context</span>
+          <button
+            className={`${dialogCloseBase} w-7 h-7 rounded-[8px] text-[14px] ${onlyMobile}`}
+            aria-label="Hide chat context"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+        <div className="flex items-baseline justify-between gap-2.5 px-[15px] pt-[7px] pb-[13px]">
+          <span className="font-mono text-[9.5px] tracking-[0.1em] text-text-muted">
+            Brochures in use
+          </span>
+          <span className="font-mono text-[10.5px] text-text-muted">
+            {activeCount} of {used}
+          </span>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col bg-files">
@@ -90,7 +98,7 @@ export function FilesPanel({
             <div className="py-4 px-[13px] border border-dashed border-line-4 rounded-[12px]">
               <div className="text-[13px] text-text-dim">No brochures added yet</div>
               <div className="text-[12px] text-text-ghost mt-[5px] leading-[1.5]">
-                Use the Add vehicle button below to pick one from your library or upload a PDF.
+                Use the Add vehicle brochure button below to pick one from your library or upload a PDF.
               </div>
             </div>
           )}
@@ -100,7 +108,7 @@ export function FilesPanel({
             onClick={onAdd}
           >
             <span className="font-mono text-[12px] text-accent-text">+</span>
-            <span>Add vehicle</span>
+            <span>Add vehicle brochure</span>
           </button>
         </div>
 

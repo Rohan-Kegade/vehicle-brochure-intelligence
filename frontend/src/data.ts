@@ -2,28 +2,29 @@ import type { Chat, Doc } from "./types.ts";
 
 /** Seed conversations for the sidebar. */
 export const INITIAL_CHATS: Chat[] = [
-  { id: "c1", title: "Towing capacity — Aurora GT", when: "Today" },
-  { id: "c2", title: "Meridian EV range vs the SUV", when: "Today" },
-  { id: "c3", title: "Which trims come with AWD?", when: "Yesterday" },
-  { id: "c4", title: "Cargo space, seats folded", when: "Yesterday" },
-  { id: "c5", title: "Warranty: what's actually covered", when: "Last week" },
-  { id: "c6", title: "Safety ratings & driver aids", when: "Last week" },
+  { id: "c1", title: "Creta vs Seltos — top variant", when: "Today" },
+  { id: "c2", title: "Nexon EV real-world range", when: "Today" },
+  { id: "c3", title: "Which variants get 6 airbags?", when: "Yesterday" },
+  { id: "c4", title: "Boot space, third row up", when: "Yesterday" },
+  { id: "c5", title: "Warranty & service intervals", when: "Last week" },
+  { id: "c6", title: "Mileage (ARAI) across variants", when: "Last week" },
 ];
 
-/** Seed library. The first two brochures start added to the chat context. */
+/** Seed library — brochures that ship with the app. The first two start
+ * added to the chat context. */
 export const INITIAL_DOCS: Doc[] = [
-  { id: "d1", title: "Aurora_GT_2026_Brochure.pdf", tag: "Sedan", pages: 34, chunks: 412, on: true, added: true },
-  { id: "d2", title: "Meridian_EV_2026_Brochure.pdf", tag: "EV", pages: 62, chunks: 738, on: true, added: true },
-  { id: "d3", title: "Terra_X_SUV_2026_Brochure.pdf", tag: "SUV", pages: 41, chunks: 503, on: true, added: false },
-  { id: "d4", title: "Frontier_Pickup_2026_Brochure.pdf", tag: "Truck", pages: 18, chunks: 221, on: true, added: false },
-  { id: "d5", title: "Vantage_Coupe_2026_Brochure.pdf", tag: "Sedan", pages: 27, chunks: 336, on: true, added: false },
-  { id: "d6", title: "Voyager_SUV_2026_Brochure.pdf", tag: "SUV", pages: 88, chunks: 954, on: true, added: false },
-  { id: "d7", title: "Catalyst_Hybrid_2026_Brochure.pdf", tag: "Hybrid", pages: 22, chunks: 268, on: true, added: false },
-  { id: "d8", title: "Summit_HD_2026_Brochure.pdf", tag: "Truck", pages: 51, chunks: 611, on: true, added: false },
+  { id: "d1", title: "Maruti_Suzuki_Swift_2026_Brochure.pdf", make: "Maruti Suzuki", tag: "Hatchback", source: "sample", pages: 28, chunks: 342, on: true, added: true },
+  { id: "d2", title: "Tata_Nexon_EV_2026_Brochure.pdf", make: "Tata", tag: "EV", source: "sample", pages: 44, chunks: 561, on: true, added: true },
+  { id: "d3", title: "Hyundai_Creta_2026_Brochure.pdf", make: "Hyundai", tag: "SUV", source: "sample", pages: 52, chunks: 640, on: true, added: false },
+  { id: "d4", title: "Mahindra_Scorpio_N_2026_Brochure.pdf", make: "Mahindra", tag: "SUV", source: "sample", pages: 38, chunks: 470, on: true, added: false },
+  { id: "d5", title: "Toyota_Innova_Crysta_2026_Brochure.pdf", make: "Toyota", tag: "MUV", source: "sample", pages: 41, chunks: 503, on: true, added: false },
+  { id: "d6", title: "Kia_Seltos_2026_Brochure.pdf", make: "Kia", tag: "SUV", source: "sample", pages: 47, chunks: 588, on: true, added: false },
+  { id: "d7", title: "Hyundai_Verna_2026_Brochure.pdf", make: "Hyundai", tag: "Sedan", source: "sample", pages: 33, chunks: 401, on: true, added: false },
+  { id: "d8", title: "Tata_Punch_2026_Brochure.pdf", make: "Tata", tag: "SUV", source: "sample", pages: 30, chunks: 372, on: true, added: false },
 ];
 
-/** Library filter tabs (match the brochure `tag` values). */
-export const LIBRARY_FILTERS = ["All", "SUV", "Sedan", "Truck", "EV", "Hybrid"] as const;
+/** Library "Type" filter chips (match the brochure `tag` values). */
+export const LIBRARY_TYPE_FILTERS = ["All", "Hatchback", "SUV", "Sedan", "MUV", "EV"] as const;
 
 /** Composer quick prompts. */
 export const SUGGESTIONS: { label: string; q: string }[] = [
@@ -35,9 +36,9 @@ export const SUGGESTIONS: { label: string; q: string }[] = [
 
 /** Filenames cycled through by the Upload button. */
 export const UPLOAD_NAMES = [
-  "Nimbus_Crossover_2026_Brochure.pdf",
-  "Torrent_Sport_2026_Brochure.pdf",
-  "Haven_SUV_2026_Brochure.pdf",
+  "Honda_Elevate_2026_Brochure.pdf",
+  "MG_Astor_2026_Brochure.pdf",
+  "Skoda_Kushaq_2026_Brochure.pdf",
 ];
 
 /** Indexing progress stages: [label, percent]. */

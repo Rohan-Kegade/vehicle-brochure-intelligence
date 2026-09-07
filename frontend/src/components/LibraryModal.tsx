@@ -1,5 +1,5 @@
 import type { Doc } from "../types.ts";
-import { LIBRARY_FILTERS } from "../data.ts";
+import { LIBRARY_TYPE_FILTERS } from "../data.ts";
 import {
   dialog,
   dialogCloseBase,
@@ -16,6 +16,8 @@ import {
 
 interface LibraryModalProps {
   query: string;
+  scope: "all" | "mine";
+  scopeCounts: { all: number; mine: number };
   filter: string;
   shown: Doc[];
   selectedCount: number;
@@ -25,14 +27,52 @@ interface LibraryModalProps {
   indexPct: number;
   onUpload: () => void;
   onQuery: (v: string) => void;
+  onScope: (v: "all" | "mine") => void;
   onFilter: (v: string) => void;
   onToggleAdd: (id: string) => void;
   onClose: () => void;
 }
 
-/** Full library browser: upload a new file, then search / filter / add existing ones. */
+const chipBase =
+  "whitespace-nowrap px-[11px] py-[5px] rounded-[8px] border font-mono text-[10px] tracking-[0.08em] cursor-pointer";
+const chipOn = "border-accent-line bg-accent-tint-2 text-accent-text-soft";
+const chipOff = "border-line-3 bg-transparent text-text-faint hover:border-line-hover";
+
+function FilterRow({
+  label,
+  options,
+  active,
+  onPick,
+}: {
+  label: string;
+  options: readonly string[];
+  active: string;
+  onPick: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="font-mono text-[9px] tracking-[0.16em] text-text-ghost w-[42px] flex-none">
+        {label}
+      </span>
+      {options.map((o) => (
+        <button
+          key={o}
+          className={`${chipBase} ${active === o ? chipOn : chipOff}`}
+          onClick={() => onPick(o)}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Full library browser: switch between the user's own uploads and the app's
+ * global library, upload a new one, then search / filter / add. */
 export function LibraryModal({
   query,
+  scope,
+  scopeCounts,
   filter,
   shown,
   selectedCount,
@@ -42,10 +82,49 @@ export function LibraryModal({
   indexPct,
   onUpload,
   onQuery,
+  onScope,
   onFilter,
   onToggleAdd,
   onClose,
 }: LibraryModalProps) {
+  const uploads = shown.filter((d) => d.source === "upload");
+  const samples = shown.filter((d) => d.source === "sample");
+
+  const row = (d: Doc) => {
+    const meta = [
+      d.source === "upload" ? "Uploaded" : "Sample",
+      d.make,
+      d.tag,
+      `${d.pages} pages`,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    return (
+      <div
+        key={d.id}
+        className="flex items-center gap-3.5 px-3.5 py-[13px] border border-line-card rounded-[12px] bg-surface-3 hover:border-line-4"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="text-[13.5px] text-text-soft truncate">{d.title}</div>
+          <div className="font-mono text-[10px] text-text-ghost mt-[5px] tracking-[0.04em]">
+            {meta}
+          </div>
+        </div>
+        <button
+          className={`flex-none px-3 py-[7px] rounded-[8px] border font-mono text-[10px] tracking-[0.06em] cursor-pointer ${
+            d.added
+              ? "border-accent-line bg-accent-tint-2 text-accent-text-soft hover:border-line-hover"
+              : "border-line-4 bg-surface-6 text-text-dim hover:border-accent hover:text-text"
+          }`}
+          title={d.added ? "Remove this brochure" : undefined}
+          onClick={() => onToggleAdd(d.id)}
+        >
+          {d.added ? "Added ✓" : "Add"}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div
       className={`${overlay} z-[60] bg-overlay items-center p-6 max-phone:p-3`}
@@ -55,12 +134,12 @@ export function LibraryModal({
         className={`${dialog} w-[min(660px,100%)] max-h-[min(620px,86dvh)]`}
         role="dialog"
         aria-modal="true"
-        aria-label="Add vehicle"
+        aria-label="Add vehicle brochure"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-none flex items-center justify-between gap-3 px-[18px] py-[15px] border-b border-line">
           <div>
-            <div className="text-[15px] font-semibold">Add vehicle</div>
+            <div className="text-[15px] font-semibold">Add vehicle brochure</div>
             <div className="font-mono text-[10px] text-text-ghost tracking-[0.08em] mt-1">
               Pick the brochures you want to chat with
             </div>
@@ -117,53 +196,62 @@ export function LibraryModal({
               className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[14px] py-[11px] max-phone:text-base"
               value={query}
               onChange={(e) => onQuery(e.target.value)}
-              placeholder="Search by brochure name…"
+              placeholder="Search by name, brand or type…"
             />
           </div>
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {LIBRARY_FILTERS.map((f) => (
+
+          {/* Scope: the user's own uploads vs. the app's global library */}
+          <div className="flex w-full rounded-[10px] border border-line-3 bg-surface-1 p-0.5 mt-3">
+            {(["mine", "all"] as const).map((s) => (
               <button
-                key={f}
-                className={`whitespace-nowrap px-[11px] py-[5px] rounded-[8px] border font-mono text-[10px] tracking-[0.08em] cursor-pointer ${
-                  filter === f
-                    ? "border-accent-line bg-accent-tint-2 text-accent-text-soft"
-                    : "border-line-3 bg-transparent text-text-faint"
+                key={s}
+                className={`flex-1 px-3 py-[7px] rounded-[8px] text-[12px] font-medium cursor-pointer transition-colors ${
+                  scope === s
+                    ? "bg-accent-tint-2 text-accent-text-soft"
+                    : "text-text-faint hover:text-text"
                 }`}
-                onClick={() => onFilter(f)}
+                onClick={() => onScope(s)}
               >
-                {f}
+                {s === "all"
+                  ? `Global library (${scopeCounts.all})`
+                  : `My uploads (${scopeCounts.mine})`}
               </button>
             ))}
+          </div>
+
+          <div className="mt-3">
+            <FilterRow
+              label="TYPE"
+              options={LIBRARY_TYPE_FILTERS}
+              active={filter}
+              onPick={onFilter}
+            />
           </div>
         </div>
 
         <div className="flex-1 min-h-[120px] flex flex-col gap-2 overflow-y-auto px-[18px] py-3.5">
-          {shown.map((d) => (
-            <div
-              key={d.id}
-              className="flex items-center gap-3.5 px-3.5 py-[13px] border border-line-card rounded-[12px] bg-surface-3 hover:border-line-4"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="text-[13.5px] text-text-soft truncate">{d.title}</div>
-                <div className="font-mono text-[10px] text-text-ghost mt-[5px] tracking-[0.04em]">
-                  {d.tag} · {d.pages} pages
+          {scope === "mine" ? (
+            <>
+              {uploads.map(row)}
+              {uploads.length === 0 && (
+                <div className={modalEmpty}>
+                  {scopeCounts.mine === 0
+                    ? "You haven't uploaded any brochures yet — use Upload a PDF above."
+                    : "None of your uploads match those filters."}
                 </div>
-              </div>
-              <button
-                className={`flex-none px-3 py-[7px] rounded-[8px] border font-mono text-[10px] tracking-[0.06em] cursor-pointer ${
-                  d.added
-                    ? "border-accent-line bg-accent-tint-2 text-accent-text-soft hover:border-line-hover"
-                    : "border-line-4 bg-surface-6 text-text-dim hover:border-accent hover:text-text"
-                }`}
-                title={d.added ? "Remove this brochure" : undefined}
-                onClick={() => onToggleAdd(d.id)}
-              >
-                {d.added ? "Added ✓" : "Add"}
-              </button>
-            </div>
-          ))}
-          {shown.length === 0 && (
-            <div className={modalEmpty}>Nothing matches that search.</div>
+              )}
+            </>
+          ) : (
+            <>
+              {samples.map(row)}
+              {samples.length === 0 && (
+                <div className={modalEmpty}>
+                  {scopeCounts.all === 0
+                    ? "The global library is empty."
+                    : "Nothing in the global library matches those filters."}
+                </div>
+              )}
+            </>
           )}
         </div>
 

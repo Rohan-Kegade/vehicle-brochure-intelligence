@@ -21,9 +21,9 @@ export function composeAnswer(text: string, activeDocs: Doc[]): Answer {
     return {
       paras: [
         `Across the ${n} brochure${n > 1 ? "s" : ""} you've added, three things stand out:`,
-        "→ The GT trim pairs a 2.4L turbo four with an eight-speed automatic, rated at 288 hp and 310 lb-ft.",
-        "→ EPA-estimated efficiency is 26 mpg city / 34 highway; the EV variant is quoted at 318 miles of range.",
-        "→ The powertrain warranty runs 5 years / 60,000 miles, with 8 years / 100,000 on the hybrid battery.",
+        "→ The petrol variant makes 113 bhp and 144 Nm from a 1.5L engine, with a choice of 6-speed manual or torque-converter automatic.",
+        "→ ARAI-rated mileage is 20.1 kmpl (MT) / 19.2 kmpl (AT); the EV variant claims 465 km on a full charge.",
+        "→ Warranty is 3 years / 1,00,000 km as standard, extendable to 5 years; the EV battery is covered 8 years / 1,60,000 km.",
       ],
       cites: cite(2),
     };
@@ -33,9 +33,9 @@ export function composeAnswer(text: string, activeDocs: Doc[]): Answer {
     return {
       paras: [
         "Comparing what I found in your brochures:",
-        "→ Both list standard all-wheel drive, but only the SUV quotes a towing figure — 5,000 lb with the tow package.",
-        "→ The specs diverge on efficiency — the sedan claims 34 mpg highway against the SUV's 28 — while the EV skips mpg entirely and lists 318 miles of range.",
-        "I'd have a person confirm the tow rating — the brochure footnote ties it to an option code.",
+        "→ Both list 6 airbags and ESC from the mid variant up, but only one offers a 360° camera and ventilated seats, and only on the top trim.",
+        "→ Efficiency differs — 20.1 kmpl (ARAI) for the petrol against the diesel's 24.3 kmpl — while the EV skips kmpl and quotes 465 km of range.",
+        "→ Ex-showroom pricing spans roughly ₹8.0–14.5 lakh across the range; the exact on-road figure isn't in the brochure.",
       ],
       cites: cite(3),
     };
@@ -45,21 +45,25 @@ export function composeAnswer(text: string, activeDocs: Doc[]): Answer {
     return {
       paras: [
         "Three things in the fine print worth noting:",
-        "→ The headline towing number needs the optional tow package — the base vehicle is rated far lower.",
-        "→ Range and mpg figures are 'EPA-estimated'; the brochure notes cold weather and roof loads reduce them.",
-        "→ The largest cargo volume is quoted with the second row folded flat, not with all seats up.",
+        "→ The headline mileage is ARAI-tested; the brochure notes real-world figures vary with driving conditions, load and AC use.",
+        "→ Several features shown in the images (sunroof, connected-car suite, alloy wheels) are top-variant-only or part of an accessory pack.",
+        "→ The largest boot figure is quoted with the last row folded — usable space with all seats up is much smaller.",
       ],
       cites: cite(2),
     };
   }
 
-  if (/(number|figure|spec|specs|horsepower|hp\b|torque|mpg|range|0-60|0 to 60|weight|capacity|dimension)/.test(q)) {
+  if (
+    /(number|figure|spec|specs|power|bhp|torque|mileage|kmpl|arai|range|0-100|0 to 100|boot|ground clearance|dimension|price)/.test(
+      q,
+    )
+  ) {
     return {
       paras: [
         "The figures I can find, word for word:",
-        "→ Output: 288 hp @ 5,500 rpm and 310 lb-ft @ 1,800–4,000 rpm.",
-        "→ 0–60 mph in 5.9 seconds; top track speed 130 mph (electronically limited).",
-        "→ Max cargo volume 64.2 cu ft (rear seats folded); towing 5,000 lb with the tow package.",
+        "→ Engine: 1.5L petrol, 113 bhp @ 6,600 rpm and 144 Nm @ 4,300 rpm.",
+        "→ ARAI mileage 20.1 kmpl (MT); 0–100 km/h in about 10.5 s; 45-litre fuel tank.",
+        "→ Boot 385 litres (rear seats up), ground clearance 190 mm, kerb weight 1,155 kg.",
       ],
       cites: cite(1),
     };
@@ -68,8 +72,8 @@ export function composeAnswer(text: string, activeDocs: Doc[]): Answer {
   if (/(who|make|brand|manufactur|built|assembl|origin|where)/.test(q)) {
     return {
       paras: [
-        "The brochure lists the model line and its assembly plant, along with the trims offered for the 2026 model year.",
-        "It doesn't name a dealer or pricing contact — that's left to the accompanying price sheet, which isn't in your files.",
+        "The brochure names the model line, the manufacturing plant in India and the variants offered for the 2026 model year.",
+        "It doesn't list dealer or on-road pricing — that's on the separate price list, which isn't in your files.",
       ],
       cites: cite(1),
     };
@@ -88,8 +92,8 @@ export function composeAnswer(text: string, activeDocs: Doc[]): Answer {
   return {
     paras: [
       "Here's what your brochures say:",
-      "→ The relevant detail sits in the powertrain section and lists an eight-speed automatic with a selectable sport mode.",
-      "→ Adaptive cruise, lane-keep assist and automatic emergency braking are standard from the mid trim up.",
+      "→ The relevant detail sits in the powertrain section and lists a 6-speed gearbox with an idle stop-start system.",
+      "→ Six airbags, ABS with EBD, electronic stability control and rear parking sensors are standard from the mid variant up.",
       "That's everything the brochures cover on this — nothing else was close enough for me to quote.",
     ],
     cites: cite(2),
