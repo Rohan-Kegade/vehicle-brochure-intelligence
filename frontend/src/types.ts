@@ -34,6 +34,9 @@ export type MessageRole = "me" | "bot";
 /** A chat message. `cites` is only present on assistant answers. */
 export interface Message {
   role: MessageRole;
+  /** Plain-text paragraphs — used for user messages and as a fallback. */
   paras: string[];
+  /** Raw Markdown for a streamed assistant answer; rendered when present. */
+  md?: string;
   cites?: string[];
 }

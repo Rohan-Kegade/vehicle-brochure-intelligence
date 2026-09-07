@@ -344,3 +344,29 @@
   mask-image: linear-gradient(to right, #000 90%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, #000 90%, transparent 100%);
 }
+
+/* ------------------------------------------------------------------ *
+ * Markdown answers — point @tailwindcss/typography at our tokens so
+ * `prose` tracks the active theme instead of its own greys.
+ * ------------------------------------------------------------------ */
+
+@layer components {
+  .prose-chat {
+    --tw-prose-body: var(--text-soft);
+    --tw-prose-headings: var(--text-hi);
+    --tw-prose-lead: var(--text-dim);
+    --tw-prose-links: var(--accent-text);
+    --tw-prose-bold: var(--text-hi);
+    --tw-prose-counters: var(--text-muted);
+    --tw-prose-bullets: var(--text-ghost);
+    --tw-prose-hr: var(--line-bubble);
+    --tw-prose-quotes: var(--text-dim);
+    --tw-prose-quote-borders: var(--line-3);
+    --tw-prose-captions: var(--text-muted);
+    --tw-prose-code: var(--text-hi);
+    --tw-prose-pre-code: var(--text-soft);
+    --tw-prose-pre-bg: var(--surface-3);
+    --tw-prose-th-borders: var(--line-3);
+    --tw-prose-td-borders: var(--line-bubble);
+  }
+}

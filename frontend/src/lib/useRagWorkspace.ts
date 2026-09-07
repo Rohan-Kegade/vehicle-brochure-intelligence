@@ -273,7 +273,7 @@ export function useRagWorkspace({
             acc += t;
             setTyping(false);
             ensureBot();
-            patchLastBot({ paras: textToParas(acc) });
+            patchLastBot({ paras: textToParas(acc), md: acc });
           },
           onCitations: (c) => {
             ensureBot();

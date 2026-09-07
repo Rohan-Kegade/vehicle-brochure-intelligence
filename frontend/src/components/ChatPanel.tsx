@@ -1,7 +1,14 @@
 import type { KeyboardEvent } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Message } from "../types.ts";
 import { SUGGESTIONS } from "../data.ts";
 import { card, cardLabel } from "./ui.ts";
+
+/** Themed Tailwind-typography container for a rendered Markdown answer. */
+const prose =
+  "prose prose-sm prose-chat max-w-none [&>:first-child]:mt-0 [&>:last-child]:mb-0 " +
+  "[&_pre]:overflow-x-auto [&_table]:block [&_table]:overflow-x-auto";
 
 interface ChatPanelProps {
   messages: Message[];
@@ -28,9 +35,15 @@ function MessageRow({ m }: { m: Message }) {
           isBot ? "bg-surface-5 border-line-bubble" : "bg-bubble-me border-bubble-me-line"
         }`}
       >
-        {m.paras.map((p, i) => (
-          <div key={i}>{p}</div>
-        ))}
+        {isBot ? (
+          <div className={prose}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {m.md ?? m.paras.join("\n\n")}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          m.paras.map((p, i) => <div key={i}>{p}</div>)
+        )}
         {m.cites && m.cites.length > 0 && (
           <div className="flex flex-col gap-1.5 mt-1 pt-[11px] border-t border-line-bubble">
             <div className="font-mono text-[9.5px] tracking-[0.14em] text-text-ghost">
