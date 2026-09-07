@@ -1,4 +1,5 @@
 import type { Chat } from "../types.ts";
+import { ACCOUNT } from "../data.ts";
 
 interface SidebarProps {
   chats: Chat[];
@@ -6,6 +7,7 @@ interface SidebarProps {
   onSelectChat: (id: string) => void;
   onNewChat: () => void;
   onOpenChatSearch: () => void;
+  onOpenSettings: () => void;
   onCollapse: () => void;
 }
 
@@ -22,6 +24,7 @@ export function Sidebar({
   onSelectChat,
   onNewChat,
   onOpenChatSearch,
+  onOpenSettings,
   onCollapse,
 }: SidebarProps) {
   return (
@@ -79,15 +82,15 @@ export function Sidebar({
       <div className="flex-none border-t border-line p-3">
         <div className="flex items-center gap-[10px] pt-1.5 px-1 pb-3">
           <div className="w-[30px] h-[30px] flex-none rounded-full border border-line-4 bg-surface-5 grid place-items-center font-mono text-[11px] text-accent-text-soft">
-            MR
+            {ACCOUNT.initials}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[12.5px] truncate">Maya Rao</div>
-            <div className="font-mono text-[9.5px] text-text-muted mt-[2px]">Free plan</div>
+            <div className="text-[12.5px] truncate">{ACCOUNT.name}</div>
+            <div className="font-mono text-[9.5px] text-text-muted mt-[2px]">{ACCOUNT.plan}</div>
           </div>
         </div>
         <div className="flex flex-col gap-[3px]">
-          <button className={menuItem}>
+          <button className={menuItem} onClick={onOpenSettings}>
             <span className="font-mono text-[11px]">⚙</span>
             <span>Settings</span>
           </button>

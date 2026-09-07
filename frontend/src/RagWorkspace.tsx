@@ -8,6 +8,7 @@ import { ChatPanel } from "./components/ChatPanel.tsx";
 import { FilesPanel } from "./components/FilesPanel.tsx";
 import { ChatSearchModal } from "./components/ChatSearchModal.tsx";
 import { LibraryModal } from "./components/LibraryModal.tsx";
+import { SettingsModal } from "./components/SettingsModal.tsx";
 import { iconSvgProps as svgProps, onlyMobile, toolBtn, toolBtnHover } from "./components/ui.ts";
 
 const scrim =
@@ -18,21 +19,40 @@ const scrim =
  */
 export function RagWorkspace(props: RagWorkspaceProps) {
   const w = useRagWorkspace(props);
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, toggleTheme } = useTheme();
 
   // Esc closes whichever overlay is open, outermost first
-  const { chatSearchOpen, libOpen, filesOpen, closeChatSearch, closeLib, closeFiles } = w;
+  const {
+    chatSearchOpen,
+    settingsOpen,
+    libOpen,
+    filesOpen,
+    closeChatSearch,
+    closeSettings,
+    closeLib,
+    closeFiles,
+  } = w;
   useEffect(() => {
-    if (!chatSearchOpen && !libOpen && !filesOpen) return;
+    if (!chatSearchOpen && !settingsOpen && !libOpen && !filesOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (chatSearchOpen) closeChatSearch();
+      else if (settingsOpen) closeSettings();
       else if (libOpen) closeLib();
       else closeFiles();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [chatSearchOpen, libOpen, filesOpen, closeChatSearch, closeLib, closeFiles]);
+  }, [
+    chatSearchOpen,
+    settingsOpen,
+    libOpen,
+    filesOpen,
+    closeChatSearch,
+    closeSettings,
+    closeLib,
+    closeFiles,
+  ]);
 
   return (
     <div
@@ -47,6 +67,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           onSelectChat={w.selectChat}
           onNewChat={w.newChat}
           onOpenChatSearch={w.openChatSearch}
+          onOpenSettings={w.openSettings}
           onCollapse={w.toggleNav}
         />
       ) : (
@@ -66,6 +87,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
               onSelectChat={w.selectChat}
               onNewChat={w.newChat}
               onOpenChatSearch={w.openChatSearch}
+              onOpenSettings={w.openSettings}
               onCollapse={w.toggleNav}
             />
           </div>
@@ -79,6 +101,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
               onExpand={w.toggleNav}
               onNewChat={w.newChat}
               onOpenChatSearch={w.openChatSearch}
+              onOpenSettings={w.openSettings}
             />
           </div>
         </div>
@@ -222,6 +245,10 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           onToggleAdd={w.toggleAdd}
           onClose={w.closeLib}
         />
+      )}
+
+      {w.settingsOpen && (
+        <SettingsModal theme={theme} onTheme={setTheme} onClose={w.closeSettings} />
       )}
     </div>
   );

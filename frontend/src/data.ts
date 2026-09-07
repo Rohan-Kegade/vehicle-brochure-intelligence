@@ -1,5 +1,13 @@
 import type { Chat, Doc } from "./types.ts";
 
+/** The signed-in user. Mock — the app has no real auth yet. */
+export const ACCOUNT = {
+  name: "Maya Rao",
+  initials: "MR",
+  email: "maya.rao@example.com",
+  plan: "Free plan",
+} as const;
+
 /** Seed conversations for the sidebar. */
 export const INITIAL_CHATS: Chat[] = [
   { id: "c1", title: "Creta vs Seltos — top variant", when: "Today" },

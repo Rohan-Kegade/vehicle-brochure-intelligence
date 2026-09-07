@@ -131,7 +131,7 @@ export function LibraryModal({
       onClick={onClose}
     >
       <div
-        className={`${dialog} w-[min(660px,100%)] max-h-[min(620px,86dvh)]`}
+        className={`${dialog} w-[min(660px,100%)] max-h-[min(700px,90dvh)]`}
         role="dialog"
         aria-modal="true"
         aria-label="Add vehicle brochure"

@@ -84,6 +84,11 @@ export interface RagWorkspaceModel {
   toggleFiles: () => void;
   closeFiles: () => void;
 
+  // settings modal
+  settingsOpen: boolean;
+  openSettings: () => void;
+  closeSettings: () => void;
+
   // chat search palette
   chatSearchOpen: boolean;
   chatQuery: string;
@@ -121,6 +126,7 @@ export function useRagWorkspace({
   const [isMobile, setIsMobile] = useState(matchesMobile);
   const [navOpen, setNavOpen] = useState(() => !matchesMobile());
   const [filesOpen, setFilesOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
   const [chatQuery, setChatQuery] = useState("");
   const [activeChat, setActiveChat] = useState("c1");
@@ -541,6 +547,14 @@ export function useRagWorkspace({
     filesOpen,
     toggleFiles: () => setFilesOpen((v) => !v),
     closeFiles: () => setFilesOpen(false),
+
+    settingsOpen,
+    openSettings: () => {
+      setSettingsOpen(true);
+      setFilesOpen(false);
+      setNavOpen((v) => (matchesMobile() ? false : v));
+    },
+    closeSettings: () => setSettingsOpen(false),
 
     chatSearchOpen,
     chatQuery,
