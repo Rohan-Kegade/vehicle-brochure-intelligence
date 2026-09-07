@@ -28,6 +28,13 @@ class Settings(BaseSettings):
     # Where uploaded source PDFs are written (local FS now; S3 key prefix later).
     storage_dir: str = "storage"
 
+    # Claude (grounded generation). Key resolves from ANTHROPIC_API_KEY if unset.
+    anthropic_api_key: str | None = None
+    anthropic_model: str = "claude-sonnet-5"
+
+    # Retrieved chunks fed to the model per question.
+    retrieval_top_k: int = 8
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
