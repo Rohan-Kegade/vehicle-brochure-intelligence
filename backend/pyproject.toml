@@ -8,6 +8,7 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
     "pydantic-settings>=2.6",
+    "python-multipart>=0.0.12",
     "sqlalchemy[asyncio]>=2.0",
     "alembic>=1.14",
     "asyncpg>=0.30",
@@ -28,5 +29,19 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI resolves these calls in argument defaults by design.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Header",
+    "fastapi.Body",
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests"]

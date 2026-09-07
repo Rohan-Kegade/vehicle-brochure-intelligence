@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://vbi:vbi@localhost:5433/vbi"
     qdrant_url: str = "http://localhost:6333"
 
+    # Where uploaded source PDFs are written (local FS now; S3 key prefix later).
+    storage_dir: str = "storage"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
