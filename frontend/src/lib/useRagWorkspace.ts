@@ -19,10 +19,6 @@ const MOBILE_QUERY = "(max-width: 720px)";
 const matchesMobile = () =>
   typeof window !== "undefined" && !!window.matchMedia?.(MOBILE_QUERY).matches;
 
-const WELCOME_PARAS = USE_MOCK
-  ? ["Two brochures are ready. Ask me anything about them and I'll quote the page I got it from."]
-  : ["Add a brochure to the chat context to start. I only answer from the brochures you've added, and I'll show the page I got it from."];
-
 /** Backend ingest status -> [label, percent] for the indexing banner. */
 const REAL_INDEX_STAGES: Record<DocStatus, [string, number]> = {
   uploading: ["Uploading", 15],
@@ -167,13 +163,9 @@ export function useRagWorkspace({
     [latencyMs],
   );
 
-  const greet = useCallback(() => {
-    push({ paras: WELCOME_PARAS }, 300);
-  }, [push]);
-
-  // mount: welcome message; in real mode also load the indexed library
+  // mount: in real mode load the indexed library. The chat opens on an empty
+  // state (see <ChatPanel>) rather than a canned welcome message.
   useEffect(() => {
-    greet();
     if (!USE_MOCK) {
       listDocuments()
         .then((list) =>
@@ -303,8 +295,7 @@ export function useRagWorkspace({
     setTyping(false);
     setDraft("");
     setMessages([]);
-    greet();
-  }, [greet]);
+  }, []);
 
   const uploadReal = useCallback(() => {
     const input = document.createElement("input");
