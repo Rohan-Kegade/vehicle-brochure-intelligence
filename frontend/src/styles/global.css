@@ -1,0 +1,142 @@
+/* ------------------------------------------------------------------ *
+ * Global reset + design tokens
+ * Ported from the "RAG Workspace" Claude Design (support.js <helmet>).
+ * ------------------------------------------------------------------ */
+
+:root {
+  --bg: #0c0e11;
+  --surface-0: #0e1114;
+  --surface-1: #101418;
+  --surface-2: #12151a;
+  --surface-3: #14181d;
+  --surface-4: #15191e;
+  --surface-5: #171b21;
+  --surface-6: #191d23;
+
+  --text: #eef1f4;
+  --text-soft: #e7ebf0;
+  --text-dim: #c3cbd4;
+  --text-muted: #9aa4af;
+  --text-faint: #8d97a3;
+  --text-ghost: #5d6672;
+
+  --line: #1b2027;
+  --line-2: #1e232a;
+  --line-3: #262b32;
+  --line-4: #2d333b;
+  --line-bubble: #232830;
+  --line-card: #212630;
+
+  --accent: #7be0b4;
+  --accent-bright: #a8ecd0;
+  --accent-ink: #08130e;
+  --accent-line: #26362f;
+  --amber: #e0c27b;
+  --danger: #e0836b;
+
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --sans: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--accent-bright);
+}
+
+input,
+button,
+textarea {
+  font: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-3);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-nobar] {
+  scrollbar-width: none;
+}
+[data-nobar]::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes blip {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
