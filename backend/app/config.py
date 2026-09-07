@@ -28,9 +28,10 @@ class Settings(BaseSettings):
     # Where uploaded source PDFs are written (local FS now; S3 key prefix later).
     storage_dir: str = "storage"
 
-    # Claude (grounded generation). Key resolves from ANTHROPIC_API_KEY if unset.
-    anthropic_api_key: str | None = None
-    anthropic_model: str = "claude-sonnet-5"
+    # Gemini (grounded generation). Key resolves from GEMINI_API_KEY /
+    # GOOGLE_API_KEY if unset.
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
 
     # Retrieved chunks fed to the model per question.
     retrieval_top_k: int = 8

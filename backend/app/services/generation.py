@@ -1,12 +1,16 @@
-"""Grounded generation: build a labeled-context prompt, stream Claude's answer,
+"""Grounded generation: build a labeled-context prompt, stream Gemini's answer,
 and turn its inline [n] markers into frontend-style citation strings.
+
+The LLM lives entirely behind this module — swap `_client` / `stream_answer`
+to change providers without touching the API layer.
 """
 
 import re
 from collections.abc import AsyncIterator
 from functools import lru_cache
 
-from anthropic import AsyncAnthropic
+from google import genai
+from google.genai import types
 
 from app.config import get_settings
 from app.services.retrieval import RetrievedChunk
@@ -24,11 +28,11 @@ _CITE_RE = re.compile(r"\[(\d+)\]")
 
 
 @lru_cache
-def _client() -> AsyncAnthropic:
+def _client() -> genai.Client:
     settings = get_settings()
-    if settings.anthropic_api_key:
-        return AsyncAnthropic(api_key=settings.anthropic_api_key)
-    return AsyncAnthropic()  # falls back to ANTHROPIC_API_KEY / ambient creds
+    if settings.gemini_api_key:
+        return genai.Client(api_key=settings.gemini_api_key)
+    return genai.Client()  # falls back to GEMINI_API_KEY / GOOGLE_API_KEY
 
 
 def _passage_location(chunk: RetrievedChunk) -> str:
@@ -44,35 +48,35 @@ def build_context(chunks: list[RetrievedChunk]) -> str:
     )
 
 
-def build_messages(question: str, chunks: list[RetrievedChunk]) -> list[dict]:
-    return [
-        {
-            "role": "user",
-            "content": (
-                f"Context passages:\n\n{build_context(chunks)}\n\n"
-                f"---\nQuestion: {question}"
-            ),
-        }
-    ]
+def build_prompt(question: str, chunks: list[RetrievedChunk]) -> str:
+    return (
+        f"Context passages:\n\n{build_context(chunks)}\n\n"
+        f"---\nQuestion: {question}"
+    )
 
 
 async def stream_answer(
     question: str,
     chunks: list[RetrievedChunk],
     *,
-    client: AsyncAnthropic | None = None,
+    client: genai.Client | None = None,
 ) -> AsyncIterator[str]:
     client = client or _client()
-    # thinking disabled for snappy first-token streaming; valid on claude-sonnet-5.
-    async with client.messages.stream(
-        model=get_settings().anthropic_model,
-        max_tokens=_MAX_TOKENS,
-        system=SYSTEM_PROMPT,
-        thinking={"type": "disabled"},
-        messages=build_messages(question, chunks),
-    ) as stream:
-        async for text in stream.text_stream:
-            yield text
+    config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        max_output_tokens=_MAX_TOKENS,
+        temperature=0.2,
+        # Disable "thinking" for snappy first-token streaming (Gemini 2.5 Flash).
+        thinking_config=types.ThinkingConfig(thinking_budget=0),
+    )
+    stream = await client.aio.models.generate_content_stream(
+        model=get_settings().gemini_model,
+        contents=build_prompt(question, chunks),
+        config=config,
+    )
+    async for chunk in stream:
+        if chunk.text:
+            yield chunk.text
 
 
 def _pretty_title(title: str) -> str:
@@ -80,7 +84,7 @@ def _pretty_title(title: str) -> str:
 
 
 def extract_citations(answer: str, chunks: list[RetrievedChunk]) -> list[str]:
-    """Map the [n] markers Claude emitted to `"<title> — page N"` strings,
+    """Map the [n] markers the model emitted to `"<title> — page N"` strings,
     in first-seen order, deduped."""
     labels: list[str] = []
     for match in _CITE_RE.finditer(answer):
