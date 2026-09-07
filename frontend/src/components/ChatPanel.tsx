@@ -18,6 +18,8 @@ interface ChatPanelProps {
   onDraft: (v: string) => void;
   onSubmit: () => void;
   onSuggest: (q: string) => void;
+  /** False until a brochure is in the chat context — locks the composer. */
+  canChat: boolean;
   /** Chat-context sheet state — the toggle lives in this strip on mobile. */
   filesOpen: boolean;
   activeCount: number;
@@ -78,6 +80,7 @@ export function ChatPanel({
   onDraft,
   onSubmit,
   onSuggest,
+  canChat,
   filesOpen,
   activeCount,
   onToggleFiles,
@@ -93,7 +96,7 @@ export function ChatPanel({
     <section
       className={`${card} flex-1 min-w-[280px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:flex-auto max-phone:min-w-0 max-phone:min-h-0`}
     >
-      <div className="flex-none flex items-center justify-between gap-2 px-4 py-[11px] border-b border-line bg-bar-tint">
+      <div className="flex-none flex items-center justify-between gap-2 px-4 h-[46px] border-b border-line bg-bar-tint">
         <span className={cardLabel}>Chat</span>
         <button
           className={`${toolBtn} ${toolBtnHover} p-[7px] ${onlyMobile}`}
@@ -140,7 +143,8 @@ export function ChatPanel({
           {SUGGESTIONS.map((s) => (
             <button
               key={s.label}
-              className="flex-none whitespace-nowrap px-[13px] py-2 rounded-full border border-line-input bg-surface-4 text-text-dim text-[12.5px] cursor-pointer transition-all duration-[180ms] hover:border-accent hover:text-text hover:bg-surface-accent"
+              disabled={!canChat}
+              className="flex-none whitespace-nowrap px-[13px] py-2 rounded-full border border-line-input bg-surface-4 text-text-dim text-[12.5px] cursor-pointer transition-all duration-[180ms] hover:border-accent hover:text-text hover:bg-surface-accent disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-line-input disabled:hover:text-text-dim disabled:hover:bg-surface-4"
               onClick={() => onSuggest(s.q)}
             >
               {s.label}
@@ -149,14 +153,20 @@ export function ChatPanel({
         </div>
         <div className="flex gap-2.5 items-center border border-line-input rounded-[13px] bg-surface-1 py-1.5 pr-1.5 pl-[15px] focus-within:border-line-input-focus">
           <input
-            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[14.5px] py-[9px] max-phone:text-base"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[14.5px] py-[9px] max-phone:text-base disabled:cursor-not-allowed"
             value={draft}
+            disabled={!canChat}
             onChange={(e) => onDraft(e.target.value)}
             onKeyDown={onKey}
-            placeholder="Ask a question about these brochures…"
+            placeholder={
+              canChat
+                ? "Ask a question about these brochures…"
+                : "Add a brochure to the chat context to start asking…"
+            }
           />
           <button
             className="flex-none px-[18px] py-2.5 border-0 rounded-[9px] bg-accent text-accent-ink text-[13.5px] font-semibold cursor-pointer hover:bg-accent-bright disabled:opacity-55 disabled:cursor-not-allowed"
+            disabled={!canChat}
             onClick={onSubmit}
           >
             Ask

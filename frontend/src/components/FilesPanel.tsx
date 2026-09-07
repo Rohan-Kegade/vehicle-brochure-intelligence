@@ -30,18 +30,19 @@ export function FilesPanel({
     <aside
       className={`${card} flex-[0_1_340px] min-w-[248px] max-w-[380px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:fixed max-phone:left-0 max-phone:right-0 max-phone:bottom-0 max-phone:top-auto max-phone:w-auto max-phone:min-w-0 max-phone:max-w-none max-phone:max-h-[82dvh] max-phone:z-[75] max-phone:rounded-b-none max-phone:border-b-0 max-phone:shadow-dialog max-phone:translate-y-[101%] max-phone:transition-transform max-phone:duration-[250ms] group-data-[files=open]/shell:max-phone:translate-y-0`}
     >
-      <div className="flex-none border-b border-line bg-bar-tint">
-        <div className="flex items-center justify-between gap-2.5 px-[15px] pt-[13px] max-phone:pt-[15px]">
-          <span className={`${cardLabel} text-accent-text-soft`}>Chat context</span>
-          <button
-            className={`${dialogCloseBase} w-7 h-7 rounded-[8px] text-[14px] ${onlyMobile}`}
-            aria-label="Hide chat context"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </div>
-        <div className="flex items-baseline justify-between gap-2.5 px-[15px] pt-[7px] pb-[13px]">
+      <div className="flex-none flex items-center justify-between gap-2.5 px-4 h-[46px] border-b border-line bg-bar-tint">
+        <span className={`${cardLabel} text-accent-text-soft`}>Chat context</span>
+        <button
+          className={`${dialogCloseBase} w-7 h-7 rounded-[8px] text-[14px] ${onlyMobile}`}
+          aria-label="Hide chat context"
+          onClick={onClose}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0 flex flex-col bg-files">
+        <div className="flex-none flex items-baseline justify-between gap-2.5 px-[15px] pt-3 pb-1">
           <span className="font-mono text-[9.5px] tracking-[0.1em] text-text-muted">
             Brochures in use
           </span>
@@ -49,10 +50,7 @@ export function FilesPanel({
             {activeCount} of {used}
           </span>
         </div>
-      </div>
-
-      <div className="flex-1 min-h-0 flex flex-col bg-files">
-        <div className="flex-1 min-h-0 overflow-y-auto px-[15px] py-3 flex flex-col gap-2">
+        <div className="flex-1 min-h-0 overflow-y-auto px-[15px] pt-2 pb-3 flex flex-col gap-2">
           {contextDocs.map((d) => (
             <div
               key={d.id}

@@ -19,23 +19,9 @@ const MOBILE_QUERY = "(max-width: 720px)";
 const matchesMobile = () =>
   typeof window !== "undefined" && !!window.matchMedia?.(MOBILE_QUERY).matches;
 
-/** Where the Chat context panel lives, phrased for the current viewport:
- * a docked rail on desktop, a bottom sheet behind the top-bar panel icon on mobile. */
-const contextPanelLocation = () =>
-  matchesMobile()
-    ? "in the Chat context panel — open it with the panel icon in the Chat bar"
-    : "in the Chat context panel on the right";
-
-const welcomeParas = () =>
-  USE_MOCK
-    ? [
-        "Hi — two brochures are ready. Ask me anything about them, and I'll quote the page I got it from.",
-        `I only read the brochures listed ${contextPanelLocation()}. If the answer isn't in them, I'll tell you instead of guessing.`,
-      ]
-    : [
-        `Hi — add a brochure with the “Add vehicle brochure” button ${contextPanelLocation()}, then ask me anything about it and I'll quote the page I read it from.`,
-        "I only answer from the brochures you've added. If it's not in them, I'll say so instead of guessing.",
-      ];
+const WELCOME_PARAS = USE_MOCK
+  ? ["Two brochures are ready. Ask me anything about them and I'll quote the page I got it from."]
+  : ["Add a brochure to the chat context to start. I only answer from the brochures you've added, and I'll show the page I got it from."];
 
 /** Backend ingest status -> [label, percent] for the indexing banner. */
 const REAL_INDEX_STAGES: Record<DocStatus, [string, number]> = {
@@ -58,6 +44,8 @@ export interface RagWorkspaceModel {
   ask: (q: string) => void;
   reset: () => void;
   scrollRef: React.RefObject<HTMLDivElement | null>;
+  /** False until at least one brochure is in the chat context — gates the composer. */
+  canChat: boolean;
 
   // header / retrieval
   retrievalMode: RetrievalMode;
@@ -174,7 +162,7 @@ export function useRagWorkspace({
   );
 
   const greet = useCallback(() => {
-    push({ paras: welcomeParas() }, 300);
+    push({ paras: WELCOME_PARAS }, 300);
   }, [push]);
 
   // mount: welcome message; in real mode also load the indexed library
@@ -237,10 +225,7 @@ export function useRagWorkspace({
       const live = activeDocs();
       if (!live.length) {
         push({
-          paras: [
-            "No brochures are in use right now, so there's nothing for me to read.",
-            `Use the “Add vehicle brochure” button ${contextPanelLocation()} to pick one from your library or upload a PDF, then ask me again.`,
-          ],
+          paras: ["Every brochure in the chat context is paused — switch one back on and ask again."],
         });
         return;
       }
@@ -524,6 +509,7 @@ export function useRagWorkspace({
     ask: send,
     reset,
     scrollRef,
+    canChat: contextDocs.length > 0,
 
     retrievalMode,
     activeChatTitle,

@@ -139,6 +139,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
             onDraft={w.setDraft}
             onSubmit={w.submit}
             onSuggest={w.ask}
+            canChat={w.canChat}
             filesOpen={w.filesOpen}
             activeCount={w.activeCount}
             onToggleFiles={w.toggleFiles}
