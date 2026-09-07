@@ -32,7 +32,7 @@ const WELCOME_PARAS = USE_MOCK
       "I only read the files listed on the right. If the answer isn't in them, I'll tell you instead of guessing.",
     ]
   : [
-      "Hi — add a brochure with “Add files”, then ask me anything about it and I'll quote the page I read it from.",
+      "Hi — add a brochure with the “Add vehicle” button on the right, then ask me anything about it and I'll quote the page I read it from.",
       "I only answer from the files you've added. If it's not in them, I'll say so instead of guessing.",
     ];
 
@@ -236,7 +236,7 @@ export function useRagWorkspace({
         push({
           paras: [
             "No files are in use right now, so there's nothing for me to read.",
-            "Use Add files in the top bar to pick one from your library or upload a PDF, then ask me again.",
+            "Use the “Add vehicle” button on the right to pick one from your library or upload a PDF, then ask me again.",
           ],
         });
         return;

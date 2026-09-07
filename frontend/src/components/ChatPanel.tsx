@@ -14,7 +14,6 @@ interface ChatPanelProps {
   messages: Message[];
   typing: boolean;
   draft: string;
-  activeCount: number;
   scrollRef: React.RefObject<HTMLDivElement | null>;
   onDraft: (v: string) => void;
   onSubmit: () => void;
@@ -71,7 +70,6 @@ export function ChatPanel({
   messages,
   typing,
   draft,
-  activeCount,
   scrollRef,
   onDraft,
   onSubmit,
@@ -88,13 +86,8 @@ export function ChatPanel({
     <section
       className={`${card} flex-1 min-w-[280px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:flex-auto max-phone:min-w-0 max-phone:min-h-0`}
     >
-      <div className="flex-none flex flex-wrap items-center justify-between gap-x-[14px] gap-y-[10px] px-4 py-[11px] border-b border-line bg-bar-tint">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className={cardLabel}>Chat</span>
-        </div>
-        <span className="font-mono text-[10px] tracking-[0.1em] text-text-muted">
-          Answering from {activeCount} of your files
-        </span>
+      <div className="flex-none flex items-center px-4 py-[11px] border-b border-line bg-bar-tint">
+        <span className={cardLabel}>Chat</span>
       </div>
 
       <div

@@ -1,26 +1,11 @@
 import type { Doc } from "../types.ts";
-import {
-  card,
-  cardLabel,
-  dialogCloseBase,
-  indexCard,
-  indexName,
-  indexRow,
-  indexStage,
-  onlyMobile,
-  track,
-  trackFill,
-} from "./ui.ts";
+import { card, cardLabel, dialogCloseBase, onlyMobile, track, trackFill } from "./ui.ts";
 
 interface FilesPanelProps {
   contextDocs: Doc[];
   activeCount: number;
   libCount: number;
   ctxPct: string;
-  indexing: boolean;
-  indexName: string;
-  indexStage: string;
-  indexPct: number;
   onToggleOn: (id: string) => void;
   onRemove: (id: string) => void;
   onAdd: () => void;
@@ -28,16 +13,13 @@ interface FilesPanelProps {
   onClose: () => void;
 }
 
-/** Right-hand rail: files feeding retrieval, indexing progress, space meter. */
+/** Right-hand rail: files feeding retrieval and the space meter. Upload
+ * progress lives in the library modal, not here. */
 export function FilesPanel({
   contextDocs,
   activeCount,
   libCount,
   ctxPct,
-  indexing,
-  indexName: name,
-  indexStage: stage,
-  indexPct,
   onToggleOn,
   onRemove,
   onAdd,
@@ -60,23 +42,6 @@ export function FilesPanel({
           ×
         </button>
       </div>
-
-      {indexing && (
-        <div className="flex-none px-3.5 py-3 border-b border-line">
-          <div className={indexCard}>
-            <div className={indexRow}>
-              <span className={indexName}>{name}</span>
-              <span className={indexStage}>{stage}</span>
-            </div>
-            <div className={`${track} h-[3px] mt-2`}>
-              <div
-                className={`${trackFill} bg-amber duration-500`}
-                style={{ width: `${indexPct}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="flex-1 min-h-0 flex flex-col bg-files">
         <div className="flex-1 min-h-0 overflow-y-auto px-[15px] py-3 flex flex-col gap-2">
@@ -125,7 +90,7 @@ export function FilesPanel({
             <div className="py-4 px-[13px] border border-dashed border-line-4 rounded-[12px]">
               <div className="text-[13px] text-text-dim">No files added yet</div>
               <div className="text-[12px] text-text-ghost mt-[5px] leading-[1.5]">
-                Use Add files in the top bar to pick from your library or upload a PDF.
+                Use the Add vehicle button below to pick one from your library or upload a PDF.
               </div>
             </div>
           )}
@@ -135,7 +100,7 @@ export function FilesPanel({
             onClick={onAdd}
           >
             <span className="font-mono text-[12px] text-accent-text">+</span>
-            <span>Add another vehicle</span>
+            <span>Add vehicle</span>
           </button>
         </div>
 

@@ -148,18 +148,17 @@ export function RagWorkspace(props: RagWorkspaceProps) {
             </button>
 
             <button
-              className={`${toolBtn} ${toolBtnHover} px-3.5 py-[9px] max-phone:p-[9px]`}
+              className={`${toolBtn} ${toolBtnHover} p-[9px]`}
+              title={w.shareCopied ? "Link copied" : "Share"}
+              aria-label="Share chat"
               onClick={w.shareChat}
             >
-              <svg className="text-accent-text" {...svgProps}>
+              <svg className={w.shareCopied ? "text-accent" : "text-accent-text"} {...svgProps}>
                 <circle cx="18" cy="5" r="3" />
                 <circle cx="6" cy="12" r="3" />
                 <circle cx="18" cy="19" r="3" />
                 <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
               </svg>
-              <span className="max-phone:hidden">
-                {w.shareCopied ? "Link copied" : "Share"}
-              </span>
             </button>
           </div>
         </header>
@@ -169,7 +168,6 @@ export function RagWorkspace(props: RagWorkspaceProps) {
             messages={w.messages}
             typing={w.typing}
             draft={w.draft}
-            activeCount={w.activeCount}
             scrollRef={w.scrollRef}
             onDraft={w.setDraft}
             onSubmit={w.submit}
@@ -180,10 +178,6 @@ export function RagWorkspace(props: RagWorkspaceProps) {
             activeCount={w.activeCount}
             libCount={w.libCount}
             ctxPct={w.ctxPct}
-            indexing={w.indexing}
-            indexName={w.indexName}
-            indexStage={w.indexStage}
-            indexPct={w.indexPct}
             onToggleOn={w.toggleOn}
             onRemove={w.toggleAdd}
             onAdd={w.openLib}
