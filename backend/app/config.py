@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # Infrastructure (defaults match backend/docker-compose.yml).
     database_url: str = "postgresql+asyncpg://vbi:vbi@localhost:5433/vbi"
     qdrant_url: str = "http://localhost:6333"
+    qdrant_collection: str = "chunks"
 
     # Where uploaded source PDFs are written (local FS now; S3 key prefix later).
     storage_dir: str = "storage"

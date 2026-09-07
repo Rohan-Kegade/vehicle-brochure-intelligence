@@ -1,12 +1,22 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    status,
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.models import Document
 from app.schemas.document import DocumentRead
+from app.services.ingest import ingest_document
 from app.services.storage import LocalStorage, get_storage
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -21,6 +31,7 @@ def _looks_like_pdf(upload: UploadFile) -> bool:
 
 @router.post("", response_model=DocumentRead, status_code=status.HTTP_201_CREATED)
 async def upload_document(
+    background: BackgroundTasks,
     file: UploadFile = File(...),
     title: str | None = Form(default=None),
     tag: str | None = Form(default=None),
@@ -29,8 +40,8 @@ async def upload_document(
 ) -> Document:
     """Accept a brochure PDF, persist the file, and create its `documents` row.
 
-    The row starts in `status = uploading`; the ingest pipeline (parse -> chunk
-    -> embed) drives it forward in later steps.
+    The row is returned immediately in `status = uploading`; ingest (parse ->
+    chunk -> embed -> index) runs in the background and drives it to `ready`.
     """
     if not _looks_like_pdf(file):
         raise HTTPException(
@@ -48,6 +59,8 @@ async def upload_document(
     doc.storage_key = await storage.save(f"{doc.id}.pdf", file)
     await session.commit()
     await session.refresh(doc)
+
+    background.add_task(ingest_document, doc.id)
     return doc
 
 

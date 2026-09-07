@@ -48,6 +48,24 @@ async def test_upload_document_rejects_non_pdf(client):
     assert resp.status_code == 415
 
 
+async def test_upload_schedules_ingest(client, cleanup_documents, monkeypatch):
+    calls: list = []
+
+    async def _spy(document_id, *args, **kwargs):
+        calls.append(document_id)
+
+    monkeypatch.setattr("app.api.documents.ingest_document", _spy)
+
+    resp = await client.post(
+        "/documents",
+        files={"file": ("VW_Golf.pdf", _MINIMAL_PDF, "application/pdf")},
+    )
+    doc_id = resp.json()["id"]
+    cleanup_documents.append(uuid.UUID(doc_id))
+
+    assert calls == [uuid.UUID(doc_id)]
+
+
 async def test_list_documents_includes_uploaded(client, cleanup_documents):
     resp = await client.post(
         "/documents",

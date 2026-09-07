@@ -1,6 +1,8 @@
+import contextlib
 import uuid
 from collections.abc import AsyncIterator
 
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import delete
@@ -11,6 +13,7 @@ from app.config import get_settings
 from app.db import get_session
 from app.main import app
 from app.models import Document
+from app.services import vector_store
 from app.services.storage import get_storage
 
 # These tests exercise the real dev stack: `docker compose up -d` must be
@@ -29,6 +32,34 @@ _session_maker = async_sessionmaker(_engine, class_=AsyncSession, expire_on_comm
 async def _dispose_engine() -> AsyncIterator[None]:
     yield
     await _engine.dispose()
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def _reset_loop_bound_singletons() -> AsyncIterator[None]:
+    """Each test runs on its own event loop; drop connections/clients bound to
+    the previous one so pooled asyncpg conns and the Qdrant httpx client don't
+    leak across loops."""
+    yield
+    from app.db import engine as app_engine
+    from app.services import vector_store
+
+    await app_engine.dispose()
+    with contextlib.suppress(Exception):
+        await vector_store.get_client().close()
+    vector_store.get_client.cache_clear()
+    vector_store._collection_ready = False
+
+
+@pytest.fixture(autouse=True)
+def _no_background_ingest(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep HTTP-layer tests off the real ingest pipeline (model download,
+    Qdrant writes). Tests that want the pipeline call `ingest_document`
+    directly or re-patch this."""
+
+    async def _noop(*_args: object, **_kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr("app.api.documents.ingest_document", _noop)
 
 
 @pytest_asyncio.fixture
@@ -54,6 +85,8 @@ async def cleanup_documents() -> AsyncIterator[list[uuid.UUID]]:
         await session.commit()
     for doc_id in created:
         storage.delete(f"{doc_id}.pdf")
+        with contextlib.suppress(Exception):  # best-effort vector cleanup
+            await vector_store.delete_document(doc_id)
 
 
 @pytest_asyncio.fixture
