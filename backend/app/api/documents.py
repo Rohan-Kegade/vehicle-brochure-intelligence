@@ -1,3 +1,4 @@
+import uuid
 from pathlib import Path
 
 from fastapi import (
@@ -72,3 +73,15 @@ async def list_documents(
         select(Document).order_by(Document.created_at.desc())
     )
     return list(result.scalars().all())
+
+
+@router.get("/{document_id}", response_model=DocumentRead)
+async def get_document(
+    document_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+) -> Document:
+    """Fetch a single document — used by the frontend to poll ingest status."""
+    doc = await session.get(Document, document_id)
+    if doc is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
+    return doc

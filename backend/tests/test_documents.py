@@ -77,3 +77,30 @@ async def test_list_documents_includes_uploaded(client, cleanup_documents):
     listing = await client.get("/documents")
     assert listing.status_code == 200
     assert doc_id in {d["id"] for d in listing.json()}
+
+
+async def test_get_document_returns_row(client, cleanup_documents):
+    resp = await client.post(
+        "/documents",
+        files={"file": ("Kia_EV6.pdf", _MINIMAL_PDF, "application/pdf")},
+        data={"tag": "EV"},
+    )
+    doc_id = resp.json()["id"]
+    cleanup_documents.append(uuid.UUID(doc_id))
+
+    got = await client.get(f"/documents/{doc_id}")
+    assert got.status_code == 200
+    body = got.json()
+    assert body["id"] == doc_id
+    assert body["tag"] == "EV"
+    assert body["status"] == "uploading"
+
+
+async def test_get_document_404_for_unknown_id(client):
+    got = await client.get(f"/documents/{uuid.uuid4()}")
+    assert got.status_code == 404
+
+
+async def test_get_document_422_for_malformed_id(client):
+    got = await client.get("/documents/not-a-uuid")
+    assert got.status_code == 422
