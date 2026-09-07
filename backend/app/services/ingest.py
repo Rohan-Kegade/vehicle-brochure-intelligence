@@ -2,26 +2,25 @@
 document's `status` from `uploading` to `ready` (or `failed`).
 
 M1 runs this inline via FastAPI `BackgroundTasks`; M2 moves it to an arq
-worker. The blocking parse/embed calls are pushed to a thread so the event
-loop stays free.
+worker. The blocking parse call is pushed to a thread; embedding + Qdrant
+upsert happen on a threadpool inside `vector_store.index_chunks`.
 """
 
 import uuid
 
+from langchain_core.documents import Document as LCDocument
+from langchain_core.embeddings import Embeddings
 from starlette.concurrency import run_in_threadpool
 
 from app.db import async_session_maker
 from app.models import Chunk, Document, DocumentStatus
 from app.services.chunking import chunk_document
-from app.services.embeddings import Embedder, get_embedder
 from app.services.parsing import parse_pdf
 from app.services.storage import get_storage
-from app.services.vector_store import upsert_chunks
+from app.services.vector_store import index_chunks
 
 
-async def ingest_document(document_id: uuid.UUID, *, embedder: Embedder | None = None) -> None:
-    embedder = embedder or get_embedder()
-
+async def ingest_document(document_id: uuid.UUID, *, embedder: Embeddings | None = None) -> None:
     async with async_session_maker() as session:
         doc = await session.get(Document, document_id)
         if doc is None or doc.storage_key is None:
@@ -40,9 +39,6 @@ async def ingest_document(document_id: uuid.UUID, *, embedder: Embedder | None =
             await session.commit()
 
             if drafts:
-                vectors = await run_in_threadpool(
-                    embedder.embed_documents, [d.content for d in drafts]
-                )
                 rows = [
                     Chunk(
                         document_id=doc.id,
@@ -56,15 +52,25 @@ async def ingest_document(document_id: uuid.UUID, *, embedder: Embedder | None =
                 ]
                 session.add_all(rows)
                 await session.flush()  # assign row.id
-                await upsert_chunks(
-                    [
-                        (
-                            row.id,
-                            vector,
-                            {"document_id": str(doc.id), "page_start": row.page_start},
-                        )
-                        for row, vector in zip(rows, vectors, strict=True)
-                    ]
+
+                lc_docs = [
+                    LCDocument(
+                        page_content=row.content,
+                        metadata={
+                            "chunk_id": str(row.id),
+                            "document_id": str(doc.id),
+                            "document_title": doc.title,
+                            "page_start": row.page_start,
+                            "page_end": row.page_end,
+                            "kind": str(row.kind),
+                        },
+                    )
+                    for row in rows
+                ]
+                await index_chunks(
+                    lc_docs,
+                    ids=[str(row.id) for row in rows],
+                    embedding=embedder,
                 )
 
             doc.chunk_count = len(drafts)

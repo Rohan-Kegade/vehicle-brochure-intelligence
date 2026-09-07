@@ -1,7 +1,8 @@
-"""Grounded generation: build a labeled-context prompt, stream Gemini's answer,
-and turn its inline [n] markers into frontend-style citation strings.
+"""Grounded generation: build a labeled-context prompt, stream Gemini's answer
+via LangChain, and turn its inline [n] markers into frontend-style citation
+strings.
 
-The LLM lives entirely behind this module — swap `_client` / `stream_answer`
+The LLM lives entirely behind this module — swap ``_llm`` / ``stream_answer``
 to change providers without touching the API layer.
 """
 
@@ -9,8 +10,8 @@ import re
 from collections.abc import AsyncIterator
 from functools import lru_cache
 
-from google import genai
-from google.genai import types
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.config import get_settings
 from app.services.retrieval import RetrievedChunk
@@ -28,11 +29,20 @@ _CITE_RE = re.compile(r"\[(\d+)\]")
 
 
 @lru_cache
-def _client() -> genai.Client:
+def _llm() -> ChatGoogleGenerativeAI:
     settings = get_settings()
+    kwargs: dict = {}
     if settings.gemini_api_key:
-        return genai.Client(api_key=settings.gemini_api_key)
-    return genai.Client()  # falls back to GEMINI_API_KEY / GOOGLE_API_KEY
+        kwargs["google_api_key"] = settings.gemini_api_key
+    return ChatGoogleGenerativeAI(
+        model=settings.gemini_model,
+        temperature=0.2,
+        max_output_tokens=_MAX_TOKENS,
+        # Keep thinking minimal for snappy first-token streaming. Gemini 3.x
+        # rejects thinking_budget=0, so use the "low" thinking level instead.
+        thinking_config={"thinking_level": "low"},
+        **kwargs,
+    )
 
 
 def _passage_location(chunk: RetrievedChunk) -> str:
@@ -59,25 +69,17 @@ async def stream_answer(
     question: str,
     chunks: list[RetrievedChunk],
     *,
-    client: genai.Client | None = None,
+    llm: ChatGoogleGenerativeAI | None = None,
 ) -> AsyncIterator[str]:
-    client = client or _client()
-    config = types.GenerateContentConfig(
-        system_instruction=SYSTEM_PROMPT,
-        max_output_tokens=_MAX_TOKENS,
-        temperature=0.2,
-        # Keep thinking minimal for snappy first-token streaming. Gemini 3.x
-        # rejects thinking_budget=0, so use the "low" thinking level instead.
-        thinking_config=types.ThinkingConfig(thinking_level="low"),
-    )
-    stream = await client.aio.models.generate_content_stream(
-        model=get_settings().gemini_model,
-        contents=build_prompt(question, chunks),
-        config=config,
-    )
-    async for chunk in stream:
-        if chunk.text:
-            yield chunk.text
+    llm = llm or _llm()
+    messages = [
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=build_prompt(question, chunks)),
+    ]
+    async for chunk in llm.astream(messages):
+        text = chunk.text
+        if text:
+            yield str(text)
 
 
 def _pretty_title(title: str) -> str:

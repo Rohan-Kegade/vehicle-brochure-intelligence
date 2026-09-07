@@ -1,16 +1,33 @@
 import uuid
 
+from langchain_core.documents import Document as LCDocument
+from langchain_core.embeddings import Embeddings
+
 from app.db import async_session_maker
 from app.models import Chunk, Document, DocumentStatus
 from app.services.embeddings import EMBED_DIM
 from app.services.retrieval import RetrievalMode, retrieve
-from app.services.vector_store import upsert_chunks
+from app.services.vector_store import index_chunks
 
 
-class _QueryEmbedder:
+def _unit(i: int) -> list[float]:
+    vec = [0.0] * EMBED_DIM
+    vec[i % EMBED_DIM] = 1.0
+    return vec
+
+
+class _SeedEmbedder(Embeddings):
+    """Document i -> the orthogonal unit vector e_i (no model download)."""
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [_unit(i) for i in range(len(texts))]
+
+    def embed_query(self, text: str) -> list[float]:
+        return _unit(0)
+
+
+class _QueryEmbedder(Embeddings):
     """Query vector = unit vector at `target` (matches the seeded chunk there)."""
-
-    dim = EMBED_DIM
 
     def __init__(self, target: int) -> None:
         self.target = target
@@ -19,9 +36,7 @@ class _QueryEmbedder:
         raise NotImplementedError
 
     def embed_query(self, text: str) -> list[float]:
-        vec = [0.0] * self.dim
-        vec[self.target % self.dim] = 1.0
-        return vec
+        return _unit(self.target)
 
 
 async def _seed(passages: list[tuple[str, int]], *, title: str = "Aurora_GT.pdf") -> uuid.UUID:
@@ -51,14 +66,25 @@ async def _seed(passages: list[tuple[str, int]], *, title: str = "Aurora_GT.pdf"
         session.add_all(rows)
         await session.flush()
 
-        points = []
-        for i, row in enumerate(rows):
-            vec = [0.0] * EMBED_DIM
-            vec[i % EMBED_DIM] = 1.0
-            points.append(
-                (row.id, vec, {"document_id": str(doc.id), "page_start": row.page_start})
+        lc_docs = [
+            LCDocument(
+                page_content=row.content,
+                metadata={
+                    "chunk_id": str(row.id),
+                    "document_id": str(doc.id),
+                    "document_title": title,
+                    "page_start": row.page_start,
+                    "page_end": row.page_end,
+                    "kind": "text",
+                },
             )
-        await upsert_chunks(points)
+            for row in rows
+        ]
+        await index_chunks(
+            lc_docs,
+            ids=[str(row.id) for row in rows],
+            embedding=_SeedEmbedder(),
+        )
         await session.commit()
         return doc.id
 

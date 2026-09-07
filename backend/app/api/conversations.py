@@ -1,4 +1,4 @@
-"""SSE chat endpoint: retrieve grounded context, stream Claude's answer, then
+"""SSE chat endpoint: retrieve grounded context, stream the LLM's answer, then
 emit the citation list.
 
 Conversations/messages are not persisted in M1 (that lands in M5) — the

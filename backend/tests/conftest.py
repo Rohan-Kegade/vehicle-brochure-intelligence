@@ -46,7 +46,10 @@ async def _reset_loop_bound_singletons() -> AsyncIterator[None]:
     await app_engine.dispose()
     with contextlib.suppress(Exception):
         await vector_store.get_client().close()
+    with contextlib.suppress(Exception):
+        vector_store._sync_client().close()
     vector_store.get_client.cache_clear()
+    vector_store._sync_client.cache_clear()
     vector_store._collection_ready = False
 
 

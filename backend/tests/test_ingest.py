@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pymupdf
 import pytest
+from langchain_core.embeddings import Embeddings
 from qdrant_client import models
 from sqlalchemy import func, select
 
@@ -14,7 +15,7 @@ from app.services.ingest import ingest_document
 from app.services.vector_store import get_client
 
 
-class FakeEmbedder:
+class FakeEmbedder(Embeddings):
     """Deterministic 384-dim vectors — no model download in tests."""
 
     dim = EMBED_DIM
@@ -54,7 +55,7 @@ async def _count_qdrant_points(document_id: uuid.UUID) -> int:
         count_filter=models.Filter(
             must=[
                 models.FieldCondition(
-                    key="document_id",
+                    key="metadata.document_id",
                     match=models.MatchValue(value=str(document_id)),
                 )
             ]
