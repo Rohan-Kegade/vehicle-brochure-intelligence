@@ -1,9 +1,10 @@
 /* ------------------------------------------------------------------ *
- * Global reset + design tokens
- * Ported from the "RAG Workspace" Claude Design (support.js <helmet>).
+ * Global reset + design tokens (dark default, light override)
  * ------------------------------------------------------------------ */
 
 :root {
+  color-scheme: dark;
+
   --bg: #0c0e11;
   --surface-0: #0e1114;
   --surface-1: #101418;
@@ -12,10 +13,14 @@
   --surface-4: #15191e;
   --surface-5: #171b21;
   --surface-6: #191d23;
+  --surface-accent: #1a2521;
 
+  --text-hi: #ffffff;
   --text: #eef1f4;
   --text-soft: #e7ebf0;
   --text-dim: #c3cbd4;
+  --text-toolbtn: #cfd6de;
+  --text-nav: #a5aeb9;
   --text-muted: #9aa4af;
   --text-faint: #8d97a3;
   --text-ghost: #5d6672;
@@ -24,18 +29,108 @@
   --line-2: #1e232a;
   --line-3: #262b32;
   --line-4: #2d333b;
+  --line-hover: #454d57;
+  --line-dash: #333a44;
+  --line-input: #2a3038;
+  --line-input-focus: #3a434e;
   --line-bubble: #232830;
   --line-card: #212630;
+
+  --bar-tint: rgba(255, 255, 255, 0.012);
+  --overlay: rgba(6, 8, 10, 0.76);
+  --dialog-shadow: 0 28px 90px rgba(0, 0, 0, 0.65);
+  --logo-grad: linear-gradient(150deg, #191d22, #101317);
+  --track-bg: #1d2228;
+  --shell-glow-a: rgba(123, 224, 180, 0.09);
+  --shell-glow-b: rgba(224, 194, 123, 0.06);
+
+  --bubble-me-bg: #1f2a26;
+  --bubble-me-line: #31423b;
 
   --accent: #7be0b4;
   --accent-bright: #a8ecd0;
   --accent-ink: #08130e;
   --accent-line: #26362f;
+  --accent-text: #7be0b4;
+  --accent-text-soft: #a8ecd0;
+  --accent-tint: rgba(123, 224, 180, 0.06);
+  --accent-tint-2: rgba(123, 224, 180, 0.08);
+  --accent-tint-hi: rgba(123, 224, 180, 0.2);
+  --accent-tint-lo: rgba(123, 224, 180, 0.05);
+  --accent-active-bg: rgba(123, 224, 180, 0.07);
+  --files-grad: linear-gradient(180deg, rgba(123, 224, 180, 0.05), rgba(123, 224, 180, 0.015));
+
   --amber: #e0c27b;
+  --amber-text: #e0c27b;
+  --amber-line: #3a3324;
+  --amber-tint: rgba(224, 194, 123, 0.05);
+
   --danger: #e0836b;
 
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --sans: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f3f5f8;
+  --surface-0: #ffffff;
+  --surface-1: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #f7f9fb;
+  --surface-4: #eef1f5;
+  --surface-5: #f1f4f7;
+  --surface-6: #eef1f5;
+  --surface-accent: #e6f6ee;
+
+  --text-hi: #0b0f13;
+  --text: #131920;
+  --text-soft: #26313b;
+  --text-dim: #47525d;
+  --text-toolbtn: #3a444e;
+  --text-nav: #55606b;
+  --text-muted: #69737e;
+  --text-faint: #7b8690;
+  --text-ghost: #8a949e;
+
+  --line: #e4e8ed;
+  --line-2: #e1e6eb;
+  --line-3: #d7dce2;
+  --line-4: #c8cfd7;
+  --line-hover: #a7b1bb;
+  --line-dash: #c3cbd3;
+  --line-input: #d1d7de;
+  --line-input-focus: #a9b3bd;
+  --line-bubble: #e3e8ed;
+  --line-card: #e5e9ee;
+
+  --bar-tint: rgba(17, 24, 33, 0.018);
+  --overlay: rgba(22, 30, 40, 0.4);
+  --dialog-shadow: 0 28px 90px rgba(24, 34, 48, 0.22);
+  --logo-grad: linear-gradient(150deg, #ffffff, #eef2f6);
+  --track-bg: #e2e6ec;
+  --shell-glow-a: rgba(123, 224, 180, 0.14);
+  --shell-glow-b: rgba(224, 194, 123, 0.12);
+
+  --bubble-me-bg: #e4f6ec;
+  --bubble-me-line: #bfe6d0;
+
+  --accent-text: #178a5b;
+  --accent-text-soft: #2f9c6d;
+  --accent-line: #bfe6d0;
+  --accent-tint: rgba(23, 138, 91, 0.07);
+  --accent-tint-2: rgba(23, 138, 91, 0.1);
+  --accent-tint-hi: rgba(23, 138, 91, 0.28);
+  --accent-tint-lo: rgba(23, 138, 91, 0.06);
+  --accent-active-bg: rgba(23, 138, 91, 0.1);
+  --files-grad: linear-gradient(180deg, rgba(23, 138, 91, 0.05), rgba(23, 138, 91, 0.015));
+
+  --amber-text: #8a6d22;
+  --amber-line: #e6d6ac;
+  --amber-tint: rgba(224, 194, 123, 0.14);
+
+  --danger: #c34f39;
 }
 
 * {
@@ -54,14 +149,17 @@ body {
   color: var(--text);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 a {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
 }
 a:hover {
-  color: var(--accent-bright);
+  color: var(--accent-text-soft);
 }
 
 input,

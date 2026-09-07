@@ -1,7 +1,7 @@
 /** Retrieval strategy shown in the header pill. */
 export type RetrievalMode = "Balanced" | "Meaning-based" | "Keyword";
 
-/** Props the design exposes for the workspace (mirrors `data-props`). */
+/** Configuration props for the workspace. */
 export interface RagWorkspaceProps {
   /** Label rendered in the "… search" header pill. */
   retrievalMode?: RetrievalMode;

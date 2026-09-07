@@ -1,6 +1,5 @@
 /* ------------------------------------------------------------------ *
  * RAG Workspace — component styles
- * Class names mirror the structure of "RAG Workspace.dc.html".
  * ------------------------------------------------------------------ */
 
 .mono {
@@ -16,9 +15,10 @@
   display: flex;
   align-items: stretch;
   background:
-    radial-gradient(1100px 600px at 78% -8%, rgba(123, 224, 180, 0.09), transparent 60%),
-    radial-gradient(900px 500px at 5% 105%, rgba(224, 194, 123, 0.06), transparent 60%),
+    radial-gradient(1100px 600px at 78% -8%, var(--shell-glow-a), transparent 60%),
+    radial-gradient(900px 500px at 5% 105%, var(--shell-glow-b), transparent 60%),
     var(--bg);
+  transition: background-color 0.2s ease;
 }
 
 /* ---- Sidebar (expanded) --------------------------------------- */
@@ -30,6 +30,9 @@
   flex-direction: column;
   border-right: 1px solid var(--line);
   background: var(--surface-0);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .rag-sidebar__head {
@@ -46,12 +49,12 @@
   flex: none;
   border-radius: 9px;
   border: 1px solid var(--line-4);
-  background: linear-gradient(150deg, #191d22, #101317);
+  background: var(--logo-grad);
   display: grid;
   place-items: center;
   font-family: var(--mono);
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .rag-sidebar__title {
@@ -79,7 +82,7 @@
 }
 .rag-icon-btn:hover {
   color: var(--text);
-  border-color: #454d57;
+  border-color: var(--line-hover);
 }
 
 .rag-sidebar__actions {
@@ -124,13 +127,13 @@
   cursor: pointer;
 }
 .rag-btn-ghost:hover {
-  border-color: #454d57;
+  border-color: var(--line-hover);
   color: var(--text);
 }
 .rag-btn-ghost .glyph {
   font-family: var(--mono);
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .rag-sidebar__chats {
@@ -162,7 +165,7 @@
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
-  color: #a5aeb9;
+  color: var(--text-nav);
   font-size: 12.5px;
   cursor: pointer;
   overflow: hidden;
@@ -175,7 +178,7 @@
 }
 .rag-chat-item.is-active {
   border-color: var(--accent-line);
-  background: rgba(123, 224, 180, 0.07);
+  background: var(--accent-active-bg);
   color: var(--text);
 }
 
@@ -203,7 +206,7 @@
   place-items: center;
   font-family: var(--mono);
   font-size: 11px;
-  color: var(--accent-bright);
+  color: var(--accent-text-soft);
 }
 
 .rag-user__name {
@@ -234,7 +237,7 @@
   border: none;
   border-radius: 9px;
   background: none;
-  color: #a5aeb9;
+  color: var(--text-nav);
   font-size: 12.5px;
   cursor: pointer;
 }
@@ -259,6 +262,9 @@
   padding: 16px 0;
   border-right: 1px solid var(--line);
   background: var(--surface-0);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .rag-rail__btn {
@@ -266,8 +272,8 @@
   height: 32px;
   border-radius: 9px;
   border: 1px solid var(--line-4);
-  background: linear-gradient(150deg, #191d22, #101317);
-  color: var(--accent);
+  background: var(--logo-grad);
+  color: var(--accent-text);
   font-family: var(--mono);
   font-size: 12px;
   cursor: pointer;
@@ -282,14 +288,14 @@
 .rag-rail__btn--ghost {
   border: 1px solid var(--line-3);
   background: none;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 13px;
 }
 .rag-rail__spacer {
   flex: 1;
 }
 .rag-rail .rag-avatar {
-  color: var(--accent-bright);
+  color: var(--accent-text-soft);
 }
 
 /* ---- Main column ----------------------------------------------- */
@@ -340,17 +346,17 @@
   border: 1px solid var(--line-4);
   border-radius: 10px;
   font-size: 13px;
-  color: #cfd6de;
+  color: var(--text-toolbtn);
   background: var(--surface-1);
   cursor: pointer;
 }
 .rag-toolbtn:hover {
   border-color: var(--accent);
-  color: #ffffff;
+  color: var(--text-hi);
 }
 .rag-toolbtn--dashed {
   border-style: dashed;
-  border-color: #333a44;
+  border-color: var(--line-dash);
 }
 .rag-toolbtn--icon {
   padding: 9px;
@@ -365,7 +371,7 @@
 .rag-toolbtn .glyph {
   font-family: var(--mono);
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .rag-toolbtn .count {
   font-family: var(--mono);
@@ -395,6 +401,9 @@
   border-radius: 18px;
   background: linear-gradient(180deg, var(--surface-2), var(--surface-0));
   overflow: hidden;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .rag-chat {
@@ -417,7 +426,7 @@
   gap: 10px 14px;
   padding: 11px 16px;
   border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.012);
+  background: var(--bar-tint);
 }
 .rag-card__bar-left {
   display: flex;
@@ -429,10 +438,10 @@
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.12em;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .rag-card__label--soft {
-  color: var(--accent-bright);
+  color: var(--accent-text-soft);
 }
 .rag-card__note {
   font-family: var(--mono);
@@ -491,8 +500,8 @@
   border-color: var(--line-bubble);
 }
 .rag-bubble--me {
-  background: #1f2a26;
-  border-color: #31423b;
+  background: var(--bubble-me-bg);
+  border-color: var(--bubble-me-line);
 }
 
 .rag-cites {
@@ -517,9 +526,9 @@
 .rag-cites__chip {
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--accent-bright);
+  color: var(--accent-text-soft);
   border: 1px solid var(--accent-line);
-  background: rgba(123, 224, 180, 0.06);
+  background: var(--accent-tint);
   border-radius: 6px;
   padding: 5px 8px;
 }
@@ -565,7 +574,7 @@
   flex: none;
   padding: 10px 18px 12px;
   border-top: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.012);
+  background: var(--bar-tint);
 }
 
 .rag-suggests {
@@ -581,7 +590,7 @@
   white-space: nowrap;
   padding: 8px 13px;
   border-radius: 999px;
-  border: 1px solid #2a3038;
+  border: 1px solid var(--line-input);
   background: var(--surface-4);
   color: var(--text-dim);
   font-size: 12.5px;
@@ -591,20 +600,20 @@
 .rag-suggest:hover {
   border-color: var(--accent);
   color: var(--text);
-  background: #1a2521;
+  background: var(--surface-accent);
 }
 
 .rag-inputbar {
   display: flex;
   gap: 10px;
   align-items: center;
-  border: 1px solid #2a3038;
+  border: 1px solid var(--line-input);
   border-radius: 13px;
   background: var(--surface-1);
   padding: 6px 6px 6px 15px;
 }
 .rag-inputbar:focus-within {
-  border-color: #3a434e;
+  border-color: var(--line-input-focus);
 }
 .rag-inputbar input {
   flex: 1;
@@ -653,7 +662,7 @@
   gap: 10px;
   padding: 13px 15px;
   border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.012);
+  background: var(--bar-tint);
 }
 .rag-files__count {
   font-family: var(--mono);
@@ -668,9 +677,9 @@
 }
 .rag-index__card {
   padding: 9px 11px;
-  border: 1px solid #3a3324;
+  border: 1px solid var(--amber-line);
   border-radius: 10px;
-  background: rgba(224, 194, 123, 0.05);
+  background: var(--amber-tint);
   animation: fadein 0.3s ease both;
 }
 .rag-index__row {
@@ -689,13 +698,13 @@
 .rag-index__stage {
   font-family: var(--mono);
   font-size: 9.5px;
-  color: var(--amber);
+  color: var(--amber-text);
   flex: none;
 }
 .rag-track {
   height: 3px;
   border-radius: 3px;
-  background: #1d2228;
+  background: var(--track-bg);
   margin-top: 8px;
   overflow: hidden;
 }
@@ -710,7 +719,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, rgba(123, 224, 180, 0.05), rgba(123, 224, 180, 0.015));
+  background: var(--files-grad);
 }
 .rag-files__list {
   flex: 1;
@@ -759,8 +768,8 @@
   width: 32px;
   height: 19px;
   border-radius: 999px;
-  border: 1px solid #2d333b;
-  background: #1d2228;
+  border: 1px solid var(--line-4);
+  background: var(--track-bg);
   padding: 2px;
   cursor: pointer;
   display: flex;
@@ -768,14 +777,14 @@
 }
 .rag-switch.is-on {
   border-color: var(--accent-line);
-  background: rgba(123, 224, 180, 0.2);
+  background: var(--accent-tint-hi);
   justify-content: flex-end;
 }
 .rag-switch__knob {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: #5d6672;
+  background: var(--text-ghost);
   transition: all 0.2s ease;
 }
 .rag-switch.is-on .rag-switch__knob {
@@ -794,7 +803,7 @@
   cursor: pointer;
 }
 .rag-remove:hover {
-  border-color: #4a525c;
+  border-color: var(--line-hover);
   color: var(--text);
 }
 
@@ -821,21 +830,21 @@
 }
 .rag-ctx-add:hover {
   border-color: var(--accent);
-  color: #ffffff;
-  background: rgba(123, 224, 180, 0.05);
+  color: var(--text-hi);
+  background: var(--accent-tint-lo);
 }
 .rag-ctx-add .glyph {
   font-family: var(--mono);
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .rag-empty__title {
   font-size: 13px;
-  color: #b6bec8;
+  color: var(--text-dim);
 }
 .rag-empty__sub {
   font-size: 12px;
-  color: #6b7480;
+  color: var(--text-ghost);
   margin-top: 5px;
   line-height: 1.5;
 }
@@ -882,13 +891,13 @@
 }
 .rag-overlay--search {
   z-index: 70;
-  background: rgba(6, 8, 10, 0.78);
+  background: var(--overlay);
   align-items: flex-start;
   padding: 60px 24px 24px;
 }
 .rag-overlay--lib {
   z-index: 60;
-  background: rgba(6, 8, 10, 0.74);
+  background: var(--overlay);
   align-items: center;
   padding: 24px;
 }
@@ -899,7 +908,7 @@
   border: 1px solid var(--line-3);
   border-radius: 18px;
   background: var(--surface-2);
-  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.65);
+  box-shadow: var(--dialog-shadow);
   overflow: hidden;
   animation: rise 0.26s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
@@ -949,7 +958,7 @@
   cursor: pointer;
 }
 .rag-dialog__close:hover {
-  border-color: #4a525c;
+  border-color: var(--line-hover);
   color: var(--text);
 }
 .rag-dialog__close--lg {
@@ -998,7 +1007,7 @@
   padding: 26px 4px;
   text-align: center;
   font-size: 13.5px;
-  color: #6b7480;
+  color: var(--text-ghost);
 }
 
 /* library modal specifics */
@@ -1035,7 +1044,7 @@
   width: 100%;
   text-align: left;
   padding: 13px 14px;
-  border: 1px dashed #333a44;
+  border: 1px dashed var(--line-dash);
   border-radius: 12px;
   background: var(--surface-1);
   color: var(--text-dim);
@@ -1044,8 +1053,8 @@
 }
 .rag-libupload__drop:hover:not(:disabled) {
   border-color: var(--accent);
-  color: #ffffff;
-  background: rgba(123, 224, 180, 0.05);
+  color: var(--text-hi);
+  background: var(--accent-tint-lo);
 }
 .rag-libupload__drop:disabled {
   cursor: default;
@@ -1059,7 +1068,7 @@
   place-items: center;
   border: 1px solid var(--accent-line);
   border-radius: 9px;
-  background: rgba(123, 224, 180, 0.06);
+  background: var(--accent-tint);
   font-size: 13px;
 }
 .rag-libupload__text {
@@ -1087,13 +1096,13 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  border: 1px solid #2a3038;
+  border: 1px solid var(--line-input);
   border-radius: 11px;
   background: var(--surface-1);
   padding: 0 13px;
 }
 .rag-libsearch__bar:focus-within {
-  border-color: #3a434e;
+  border-color: var(--line-input-focus);
 }
 .rag-libsearch__bar .glyph {
   font-family: var(--mono);
@@ -1131,8 +1140,8 @@
 }
 .rag-filter.is-active {
   border-color: var(--accent-line);
-  background: rgba(123, 224, 180, 0.08);
-  color: var(--accent-bright);
+  background: var(--accent-tint-2);
+  color: var(--accent-text-soft);
 }
 
 .rag-liblist {
@@ -1192,12 +1201,12 @@
 }
 .rag-librow__btn.is-added {
   border-color: var(--accent-line);
-  background: rgba(123, 224, 180, 0.08);
-  color: var(--accent-bright);
+  background: var(--accent-tint-2);
+  color: var(--accent-text-soft);
 }
 .rag-librow__btn.is-added:hover {
-  border-color: #4a525c;
-  color: var(--accent-bright);
+  border-color: var(--line-hover);
+  color: var(--accent-text-soft);
 }
 
 .rag-dialog__foot {
@@ -1208,7 +1217,7 @@
   gap: 12px;
   padding: 13px 18px;
   border-top: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.012);
+  background: var(--bar-tint);
 }
 .rag-dialog__foot-note {
   font-family: var(--mono);

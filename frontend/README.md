@@ -1,9 +1,8 @@
 # Ask My Documents — RAG Workspace (frontend)
 
-React + TypeScript implementation of the **RAG Workspace** Claude Design
-(`RAG Workspace.dc.html`). A retrieval-augmented chat workspace: ask questions
-about a set of PDFs and get answers with page-level citations, drawn only from
-the files currently in context.
+A retrieval-augmented chat workspace: ask questions about a set of PDFs and get
+answers with page-level citations, drawn only from the files currently in
+context.
 
 ## Stack
 
@@ -24,19 +23,17 @@ npm run preview  # serve the production build
 
 The chat, uploads, and retrieval are **simulated on the client** — there is no
 backend. Assistant replies are canned responses keyed off keywords in the
-question (summary / compare / risk / numbers / who / sources), matching the
-behaviour of the original design's `support.js` prototype.
+question (summary / compare / risk / numbers / who / sources).
 
 Interactive pieces:
 
 | Area | Behaviour |
 | --- | --- |
 | Sidebar | Collapse to an icon rail, switch chats, start a new chat |
-| Search chats | Command-palette (`⌕`) filtering recent conversations |
-| Header pill | Shows the retrieval mode passed via props |
-| Upload | Fakes an indexing run (Uploading → Reading → Organising → Ready) then adds the file |
-| Library modal | Search + tag filters; add/remove files from the chat context |
-| Files panel | Per-file pause/resume toggle, remove, and a "space used" meter |
+| Search chats | Command palette (`⌕`) filtering recent conversations |
+| Header | Chat title with dark/light theme toggle, delete-chat, and share (copy link) actions |
+| Add vehicle modal | Upload a file (simulated indexing run) or search / tag-filter the library and add/remove files from the chat context |
+| Files panel | Per-file pause/resume toggle, remove, "space used" meter, and an "Add another vehicle" button |
 | Composer | Suggestion chips, Enter to send, typing indicator |
 
 ## Props
@@ -55,7 +52,7 @@ src/
   types.ts                 shared types
   data.ts                  seed chats / docs / constants
   lib/
-    useRagWorkspace.ts     all state + behaviour (port of the .dc.html class)
+    useRagWorkspace.ts     all state + behaviour
     answers.ts             canned assistant responses + citation builder
   components/
     Sidebar.tsx            expanded left nav
@@ -63,7 +60,7 @@ src/
     ChatPanel.tsx          transcript + composer
     FilesPanel.tsx         files-in-use rail
     ChatSearchModal.tsx    recent-chat search palette
-    LibraryModal.tsx       full library browser
+    LibraryModal.tsx       add-vehicle / library browser
   styles/
     global.css             reset, tokens, keyframes
     workspace.css          component styles

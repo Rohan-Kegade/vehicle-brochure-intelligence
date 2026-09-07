@@ -1,10 +1,7 @@
 import type { Doc, Message } from "../types.ts";
 import { CITE_PAGES } from "../data.ts";
 
-/**
- * Build the "file — page N" citation list from the active documents,
- * mirroring `cite(n)` in the source design.
- */
+/** Build the "file — page N" citation list from the active documents. */
 export function buildCites(activeDocs: Doc[], n: number): string[] {
   return activeDocs.slice(0, n).map((d, i) => {
     const short = d.title.replace(/\.pdf$/, "").replace(/_/g, " ");
@@ -14,10 +11,7 @@ export function buildCites(activeDocs: Doc[], n: number): string[] {
 
 type Answer = Pick<Message, "paras" | "cites">;
 
-/**
- * Pick a canned assistant answer for a user question, keyed off the same
- * keyword patterns the design uses in `send()`.
- */
+/** Pick a canned assistant answer for a user question, keyed off keywords. */
 export function composeAnswer(text: string, activeDocs: Doc[]): Answer {
   const q = text.toLowerCase();
   const cite = (n: number) => buildCites(activeDocs, n);

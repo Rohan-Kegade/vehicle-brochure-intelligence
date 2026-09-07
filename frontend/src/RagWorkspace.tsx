@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { RagWorkspaceProps } from "./types.ts";
 import { useRagWorkspace } from "./lib/useRagWorkspace.ts";
+import { useTheme } from "./lib/useTheme.ts";
 import { Sidebar } from "./components/Sidebar.tsx";
 import { CollapsedRail } from "./components/CollapsedRail.tsx";
 import { ChatPanel } from "./components/ChatPanel.tsx";
@@ -11,10 +12,10 @@ import "./styles/workspace.css";
 
 /**
  * "Ask My Documents" — a retrieval-augmented chat workspace.
- * Port of `RAG Workspace.dc.html` to React + TypeScript.
  */
 export function RagWorkspace(props: RagWorkspaceProps) {
   const w = useRagWorkspace(props);
+  const { theme, toggleTheme } = useTheme();
 
   // Esc closes whichever overlay is open (chat search sits above the library)
   const { chatSearchOpen, libOpen, closeChatSearch, closeLib } = w;
@@ -52,6 +53,43 @@ export function RagWorkspace(props: RagWorkspaceProps) {
         <header className="rag-header">
           <div className="rag-header__title">{w.activeChatTitle}</div>
           <div className="rag-header__actions">
+            <button
+              className="rag-toolbtn rag-toolbtn--icon"
+              title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              aria-label="Toggle colour theme"
+              onClick={toggleTheme}
+            >
+              {theme === "dark" ? (
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+                </svg>
+              ) : (
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+                </svg>
+              )}
+            </button>
             <button
               className="rag-toolbtn rag-toolbtn--icon rag-toolbtn--danger"
               title="Delete chat"
