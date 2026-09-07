@@ -1,10 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { RagWorkspace } from "./RagWorkspace.tsx";
+import { App } from "./App.tsx";
 import "./styles/app.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RagWorkspace retrievalMode="Balanced" latencyMs={1100} />
+    <App />
   </StrictMode>,
 );

@@ -142,7 +142,7 @@ export function ChatPanel({
 
   return (
     <section
-      className={`${card} flex-[3_1_0%] min-w-[280px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:flex-auto max-phone:min-w-0 max-phone:min-h-0`}
+      className={`${card} flex-[4_1_0%] min-w-[280px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:flex-auto max-phone:min-w-0 max-phone:min-h-0`}
     >
       <div className="flex-none flex items-center justify-between gap-2 px-4 h-[46px] border-b border-line bg-bar-tint">
         <span className={cardLabel}>Chat</span>

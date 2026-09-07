@@ -28,7 +28,7 @@ export function FilesPanel({
 
   return (
     <aside
-      className={`${card} flex-[1_1_0%] min-w-[232px] max-w-[336px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:fixed max-phone:left-0 max-phone:right-0 max-phone:bottom-0 max-phone:top-auto max-phone:w-auto max-phone:min-w-0 max-phone:max-w-none max-phone:max-h-[82dvh] max-phone:z-[75] max-phone:rounded-b-none max-phone:border-b-0 max-phone:shadow-dialog max-phone:translate-y-[101%] max-phone:transition-transform max-phone:duration-[250ms] group-data-[files=open]/shell:max-phone:translate-y-0`}
+      className={`${card} flex-[1_1_0%] min-w-[224px] max-w-[312px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:fixed max-phone:left-0 max-phone:right-0 max-phone:bottom-0 max-phone:top-auto max-phone:w-auto max-phone:min-w-0 max-phone:max-w-none max-phone:max-h-[82dvh] max-phone:z-[75] max-phone:rounded-b-none max-phone:border-b-0 max-phone:shadow-dialog max-phone:translate-y-[101%] max-phone:transition-transform max-phone:duration-[250ms] group-data-[files=open]/shell:max-phone:translate-y-0`}
     >
       <div className="flex-none flex items-center justify-between gap-2.5 px-4 h-[46px] border-b border-line bg-bar-tint">
         <span className={`${cardLabel} text-accent-text-soft`}>Chat context</span>
