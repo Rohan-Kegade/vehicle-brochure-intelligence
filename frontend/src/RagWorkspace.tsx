@@ -40,7 +40,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
       data-nav={w.navOpen ? "open" : "closed"}
       data-files={w.filesOpen ? "open" : "closed"}
     >
-      {w.isMobile || w.navOpen ? (
+      {w.isMobile ? (
         <Sidebar
           chats={w.chats}
           activeChat={w.activeChat}
@@ -50,11 +50,38 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           onCollapse={w.toggleNav}
         />
       ) : (
-        <CollapsedRail
-          onExpand={w.toggleNav}
-          onNewChat={w.newChat}
-          onOpenChatSearch={w.openChatSearch}
-        />
+        <div
+          className="relative flex-none h-full overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none"
+          style={{ width: w.navOpen ? 236 : 60 }}
+        >
+          <div
+            className={`absolute inset-y-0 left-0 flex transition-opacity duration-200 motion-reduce:transition-none ${
+              w.navOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+            aria-hidden={!w.navOpen}
+          >
+            <Sidebar
+              chats={w.chats}
+              activeChat={w.activeChat}
+              onSelectChat={w.selectChat}
+              onNewChat={w.newChat}
+              onOpenChatSearch={w.openChatSearch}
+              onCollapse={w.toggleNav}
+            />
+          </div>
+          <div
+            className={`absolute inset-y-0 left-0 flex transition-opacity duration-200 motion-reduce:transition-none ${
+              w.navOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+            }`}
+            aria-hidden={w.navOpen}
+          >
+            <CollapsedRail
+              onExpand={w.toggleNav}
+              onNewChat={w.newChat}
+              onOpenChatSearch={w.openChatSearch}
+            />
+          </div>
+        </div>
       )}
 
       <button
