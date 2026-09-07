@@ -1,32 +1,44 @@
 import { useCallback, useEffect, useState } from "react";
 import { LandingPage } from "./components/LandingPage.tsx";
+import { AuthPage } from "./components/AuthPage.tsx";
 import { RagWorkspace } from "./RagWorkspace.tsx";
 
-/** The workspace lives at /app; everything else shows the landing page. */
-const WORKSPACE_PATH = "/app";
+type Route = "landing" | "signup" | "login" | "workspace";
 
-const atWorkspace = () =>
-  window.location.pathname.replace(/\/+$/, "") === WORKSPACE_PATH;
+const ROUTES: Record<string, Route> = {
+  "/app": "workspace",
+  "/signup": "signup",
+  "/login": "login",
+};
+
+const routeFor = (pathname: string): Route =>
+  ROUTES[pathname.replace(/\/+$/, "") || "/"] ?? "landing";
 
 export function App() {
-  const [workspace, setWorkspace] = useState(atWorkspace);
+  const [route, setRoute] = useState<Route>(() => routeFor(window.location.pathname));
 
   useEffect(() => {
-    const sync = () => setWorkspace(atWorkspace());
+    const sync = () => setRoute(routeFor(window.location.pathname));
     window.addEventListener("popstate", sync);
     return () => window.removeEventListener("popstate", sync);
   }, []);
 
-  const enterWorkspace = useCallback(() => {
-    if (atWorkspace()) return;
-    window.history.pushState(null, "", WORKSPACE_PATH);
-    setWorkspace(true);
+  const navigate = useCallback((path: string) => {
+    if (window.location.pathname.replace(/\/+$/, "") !== path.replace(/\/+$/, "")) {
+      window.history.pushState(null, "", path);
+    }
+    setRoute(routeFor(path));
     window.scrollTo(0, 0);
   }, []);
 
-  return workspace ? (
-    <RagWorkspace retrievalMode="Balanced" latencyMs={1100} />
-  ) : (
-    <LandingPage onEnter={enterWorkspace} />
-  );
+  switch (route) {
+    case "workspace":
+      return <RagWorkspace retrievalMode="Balanced" latencyMs={1100} />;
+    case "signup":
+      return <AuthPage mode="signup" onNavigate={navigate} />;
+    case "login":
+      return <AuthPage mode="login" onNavigate={navigate} />;
+    default:
+      return <LandingPage onNavigate={navigate} />;
+  }
 }

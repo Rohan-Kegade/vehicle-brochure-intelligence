@@ -1,29 +1,8 @@
-import type { MouseEvent, ReactNode } from "react";
+import type { ComponentProps } from "react";
+import { NavLink } from "./NavLink.tsx";
 
 interface LandingPageProps {
-  /** Enter the workspace (called on a plain left-click of any CTA). */
-  onEnter: () => void;
-}
-
-interface EnterLinkProps {
-  onEnter: () => void;
-  className: string;
-  children: ReactNode;
-}
-
-/** Anchor to the workspace that navigates in-app on a plain left-click but
- * still behaves like a real link for modified clicks / middle-click. */
-function EnterLink({ onEnter, className, children }: EnterLinkProps) {
-  const onClick = (e: MouseEvent) => {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-    e.preventDefault();
-    onEnter();
-  };
-  return (
-    <a href="/app" onClick={onClick} className={className}>
-      {children}
-    </a>
-  );
+  onNavigate: (path: string) => void;
 }
 
 const QUESTIONS = [
@@ -69,10 +48,14 @@ const btnPrimary =
 const btnGhost =
   "inline-flex items-center rounded-[12px] border border-line-4 text-text-toolbtn transition-colors duration-150 hover:border-line-hover hover:text-text-hi";
 
-export function LandingPage({ onEnter }: LandingPageProps) {
-  const Enter = (props: Omit<EnterLinkProps, "onEnter">) => (
-    <EnterLink onEnter={onEnter} {...props} />
-  );
+export function LandingPage({ onNavigate }: LandingPageProps) {
+  /** In-app link; defaults to the workspace but takes an explicit `href`. */
+  const Go = ({
+    href = "/app",
+    ...rest
+  }: Omit<ComponentProps<typeof NavLink>, "onNavigate" | "href"> & {
+    href?: string;
+  }) => <NavLink href={href} onNavigate={onNavigate} {...rest} />;
 
   return (
     <div className="min-h-screen bg-shell">
@@ -86,10 +69,12 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             Ask My Documents
           </span>
         </div>
-        <Enter className={`${btnGhost} px-4 py-[9px] text-[13.5px]`}>Sign in</Enter>
-        <Enter className={`${btnPrimary} px-[17px] py-[9px] text-[13.5px]`}>
+        <Go href="/login" className={`${btnGhost} px-4 py-[9px] text-[13.5px]`}>
+          Sign in
+        </Go>
+        <Go href="/signup" className={`${btnPrimary} px-[17px] py-[9px] text-[13.5px]`}>
           Start free
-        </Enter>
+        </Go>
       </header>
 
       {/* Hero */}
@@ -114,12 +99,12 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           </p>
 
           <div className="mb-[26px] flex flex-wrap gap-3">
-            <Enter className={`${btnPrimary} px-6 py-3.5 text-[15px]`}>
+            <Go className={`${btnPrimary} px-6 py-3.5 text-[15px]`}>
               Compare two cars free
-            </Enter>
-            <Enter className={`${btnGhost} px-6 py-3.5 text-[15px]`}>
+            </Go>
+            <Go className={`${btnGhost} px-6 py-3.5 text-[15px]`}>
               Browse the library
-            </Enter>
+            </Go>
           </div>
 
           <div className="flex flex-wrap gap-x-[22px] gap-y-2.5 font-mono text-[11px] tracking-[0.04em] text-text-muted">
@@ -238,13 +223,13 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           </div>
           <div className="flex min-w-[280px] flex-[1_1_380px] flex-col gap-2.5">
             {QUESTIONS.map((q) => (
-              <Enter
+              <Go
                 key={q}
                 className="flex items-center gap-3.5 rounded-[12px] border border-line-card bg-surface-3 px-4 py-3.5 text-[14px] text-text-soft transition-colors duration-150 hover:border-accent hover:bg-surface-accent"
               >
                 <span className="min-w-0 flex-1 [text-wrap:pretty]">{q}</span>
                 <span className="flex-none font-mono text-[12px] text-accent-text">→</span>
-              </Enter>
+              </Go>
             ))}
           </div>
         </div>
@@ -254,13 +239,13 @@ export function LandingPage({ onEnter }: LandingPageProps) {
       <section className={sectionShell}>
         <div className="mb-[22px] flex flex-wrap items-baseline justify-between gap-3.5">
           <div className={eyebrow}>IN THE LIBRARY</div>
-          <Enter className="text-[13.5px] text-accent-text hover:text-accent-text-soft">
+          <Go className="text-[13.5px] text-accent-text hover:text-accent-text-soft">
             See all 840 brochures →
-          </Enter>
+          </Go>
         </div>
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(210px,1fr))]">
           {LIBRARY.map((d) => (
-            <Enter
+            <Go
               key={d.name}
               className="block rounded-[13px] border border-line-card bg-surface-3 p-4 text-text-soft transition-colors duration-150 hover:border-accent hover:bg-surface-accent"
             >
@@ -268,7 +253,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
               <div className="mt-2 font-mono text-[10px] tracking-[0.04em] text-text-muted">
                 {d.meta}
               </div>
-            </Enter>
+            </Go>
           ))}
         </div>
       </section>
@@ -284,12 +269,12 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             fits before you book a test drive.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Enter className={`${btnPrimary} px-[26px] py-3.5 text-[15px]`}>
+            <Go className={`${btnPrimary} px-[26px] py-3.5 text-[15px]`}>
               Start comparing free
-            </Enter>
-            <Enter className={`${btnGhost} px-[26px] py-3.5 text-[15px]`}>
+            </Go>
+            <Go className={`${btnGhost} px-[26px] py-3.5 text-[15px]`}>
               See how it answers
-            </Enter>
+            </Go>
           </div>
         </div>
       </section>
@@ -300,9 +285,9 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           ASK MY DOCUMENTS · 2026
         </span>
         <div className="flex flex-wrap gap-[22px] text-[13px]">
-          <Enter className="text-accent-text hover:text-accent-text-soft">
+          <Go className="text-accent-text hover:text-accent-text-soft">
             Open the workspace
-          </Enter>
+          </Go>
           <a href="#" className="text-accent-text hover:text-accent-text-soft">
             Privacy
           </a>
