@@ -8,7 +8,7 @@ import { ChatPanel } from "./components/ChatPanel.tsx";
 import { FilesPanel } from "./components/FilesPanel.tsx";
 import { ChatSearchModal } from "./components/ChatSearchModal.tsx";
 import { LibraryModal } from "./components/LibraryModal.tsx";
-import "./styles/workspace.css";
+import { onlyMobile } from "./components/ui.ts";
 
 const svgProps = {
   width: 15,
@@ -21,6 +21,13 @@ const svgProps = {
   strokeLinejoin: "round" as const,
   "aria-hidden": true,
 };
+
+const toolBtn =
+  "relative flex items-center gap-2 border border-line-4 rounded-[10px] text-[13px] text-text-toolbtn bg-surface-1 cursor-pointer [&_svg]:block";
+const toolBtnHover = "hover:border-accent hover:text-text-hi";
+
+const scrim =
+  "hidden fixed inset-0 border-0 bg-overlay cursor-pointer max-phone:block max-phone:opacity-0 max-phone:pointer-events-none max-phone:transition-opacity max-phone:duration-200";
 
 /**
  * "Ask My Documents" — a retrieval-augmented chat workspace.
@@ -45,7 +52,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
 
   return (
     <div
-      className="rag-shell"
+      className="group/shell h-screen [height:100dvh] min-h-[420px] overflow-hidden flex items-stretch bg-shell transition-colors duration-200"
       data-nav={w.navOpen ? "open" : "closed"}
       data-files={w.filesOpen ? "open" : "closed"}
     >
@@ -68,16 +75,16 @@ export function RagWorkspace(props: RagWorkspaceProps) {
 
       <button
         type="button"
-        className="rag-scrim rag-scrim--nav"
+        className={`${scrim} max-phone:z-[79] group-data-[nav=open]/shell:max-phone:opacity-100 group-data-[nav=open]/shell:max-phone:pointer-events-auto`}
         aria-label="Close menu"
         tabIndex={-1}
         onClick={w.toggleNav}
       />
 
-      <div className="rag-main">
-        <header className="rag-header">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden px-[clamp(14px,3vw,32px)] pt-4 pb-[18px] max-phone:px-3 max-phone:pt-2.5 max-phone:pb-3">
+        <header className="flex-none flex flex-nowrap items-center gap-3.5 pb-3 border-b border-line-2 mb-3 max-phone:gap-2 max-phone:pb-2.5 max-phone:mb-2.5">
           <button
-            className="rag-toolbtn rag-toolbtn--icon rag-only-mobile"
+            className={`${toolBtn} ${toolBtnHover} p-[9px] ${onlyMobile}`}
             aria-label="Open menu"
             onClick={w.toggleNav}
           >
@@ -86,11 +93,13 @@ export function RagWorkspace(props: RagWorkspaceProps) {
             </svg>
           </button>
 
-          <div className="rag-header__title">{w.activeChatTitle}</div>
+          <div className="flex-1 min-w-0 text-base font-semibold tracking-[-0.2px] truncate max-phone:text-[15px]">
+            {w.activeChatTitle}
+          </div>
 
-          <div className="rag-header__actions">
+          <div className="flex items-center gap-[9px] max-phone:gap-1.5">
             <button
-              className="rag-toolbtn rag-toolbtn--icon"
+              className={`${toolBtn} ${toolBtnHover} p-[9px]`}
               title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
               aria-label="Toggle colour theme"
               onClick={toggleTheme}
@@ -108,7 +117,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
             </button>
 
             <button
-              className="rag-toolbtn rag-toolbtn--icon rag-only-mobile"
+              className={`${toolBtn} ${toolBtnHover} p-[9px] ${onlyMobile}`}
               aria-label="Show files in use"
               aria-pressed={w.filesOpen}
               onClick={w.toggleFiles}
@@ -117,11 +126,15 @@ export function RagWorkspace(props: RagWorkspaceProps) {
                 <rect x="3" y="4" width="18" height="16" rx="2" />
                 <path d="M15 4v16" />
               </svg>
-              {w.activeCount > 0 && <span className="rag-toolbtn__badge">{w.activeCount}</span>}
+              {w.activeCount > 0 && (
+                <span className="absolute -top-[5px] -right-[5px] min-w-[15px] h-[15px] px-[3px] rounded-full bg-accent text-accent-ink font-mono text-[9px] font-semibold leading-[15px] text-center">
+                  {w.activeCount}
+                </span>
+              )}
             </button>
 
             <button
-              className="rag-toolbtn rag-toolbtn--icon rag-toolbtn--danger"
+              className={`${toolBtn} p-[9px] hover:border-danger hover:text-danger`}
               title="Delete chat"
               aria-label="Delete chat"
               onClick={w.deleteChat}
@@ -134,21 +147,24 @@ export function RagWorkspace(props: RagWorkspaceProps) {
               </svg>
             </button>
 
-            <button className="rag-toolbtn rag-toolbtn--share" onClick={w.shareChat}>
-              <svg className="glyph" {...svgProps}>
+            <button
+              className={`${toolBtn} ${toolBtnHover} px-3.5 py-[9px] max-phone:p-[9px]`}
+              onClick={w.shareChat}
+            >
+              <svg className="text-accent-text" {...svgProps}>
                 <circle cx="18" cy="5" r="3" />
                 <circle cx="6" cy="12" r="3" />
                 <circle cx="18" cy="19" r="3" />
                 <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
               </svg>
-              <span className="rag-toolbtn__label">
+              <span className="max-phone:hidden">
                 {w.shareCopied ? "Link copied" : "Share"}
               </span>
             </button>
           </div>
         </header>
 
-        <div className="rag-body">
+        <div className="flex-1 min-h-0 flex flex-nowrap gap-[18px] items-stretch max-tablet:flex-wrap max-tablet:overflow-y-auto max-phone:flex-nowrap max-phone:overflow-visible max-phone:gap-0">
           <ChatPanel
             messages={w.messages}
             typing={w.typing}
@@ -178,7 +194,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
 
       <button
         type="button"
-        className="rag-scrim rag-scrim--files"
+        className={`${scrim} max-phone:z-[74] group-data-[files=open]/shell:max-phone:opacity-100 group-data-[files=open]/shell:max-phone:pointer-events-auto`}
         aria-label="Hide files"
         tabIndex={-1}
         onClick={w.closeFiles}

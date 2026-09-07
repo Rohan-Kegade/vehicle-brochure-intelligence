@@ -1,4 +1,5 @@
 import type { Chat } from "../types.ts";
+import { dialog, dialogCloseBase, modalEmpty, overlay } from "./ui.ts";
 
 interface ChatSearchModalProps {
   query: string;
@@ -11,34 +12,47 @@ interface ChatSearchModalProps {
 /** Command-palette style search over recent chats. */
 export function ChatSearchModal({ query, results, onQuery, onPick, onClose }: ChatSearchModalProps) {
   return (
-    <div className="rag-overlay rag-overlay--search" onClick={onClose}>
+    <div
+      className={`${overlay} z-[70] bg-overlay items-start pt-[60px] px-6 pb-6 max-phone:px-3 max-phone:pt-4 max-phone:pb-3`}
+      onClick={onClose}
+    >
       <div
-        className="rag-dialog rag-dialog--search"
+        className={`${dialog} w-[min(600px,100%)] max-h-[min(560px,80dvh)]`}
         role="dialog"
         aria-modal="true"
         aria-label="Search your chats"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="rag-dialog__searchhead">
-          <span className="glyph">⌕</span>
+        <div className="flex-none flex items-center gap-2.5 px-3.5 py-1 border-b border-line">
+          <span className="font-mono text-[13px] text-text-ghost">⌕</span>
           <input
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[15px] py-[15px] max-phone:text-base"
             autoFocus
             value={query}
             onChange={(e) => onQuery(e.target.value)}
             placeholder="Search your chats…"
           />
-          <button className="rag-dialog__close" onClick={onClose}>
+          <button
+            className={`${dialogCloseBase} w-7 h-7 rounded-[8px] text-[14px]`}
+            onClick={onClose}
+          >
             ×
           </button>
         </div>
-        <div className="rag-dialog__body">
+        <div className="flex-1 min-h-[100px] overflow-y-auto p-2.5">
           {results.map((c) => (
-            <button key={c.id} className="rag-result" onClick={() => onPick(c.id)}>
-              <div className="rag-result__title">{c.title}</div>
-              <div className="rag-result__when">{c.when}</div>
+            <button
+              key={c.id}
+              className="block w-full text-left px-[13px] py-[11px] border-0 rounded-[11px] bg-transparent text-text-soft cursor-pointer hover:bg-surface-5"
+              onClick={() => onPick(c.id)}
+            >
+              <div className="text-[13.5px] truncate">{c.title}</div>
+              <div className="font-mono text-[9.5px] text-text-muted mt-1 tracking-[0.04em]">
+                {c.when}
+              </div>
             </button>
           ))}
-          {results.length === 0 && <div className="rag-modal-empty">No chats match that.</div>}
+          {results.length === 0 && <div className={modalEmpty}>No chats match that.</div>}
         </div>
       </div>
     </div>

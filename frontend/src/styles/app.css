@@ -1,0 +1,346 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* ------------------------------------------------------------------ *
+ * Design tokens (dark default, light override)
+ * The raw custom properties stay plain CSS so the [data-theme] swap
+ * keeps working; `@theme inline` below maps them onto Tailwind utilities.
+ * ------------------------------------------------------------------ */
+
+:root {
+  color-scheme: dark;
+
+  --bg: #0c0e11;
+  --surface-0: #0e1114;
+  --surface-1: #101418;
+  --surface-2: #12151a;
+  --surface-3: #14181d;
+  --surface-4: #15191e;
+  --surface-5: #171b21;
+  --surface-6: #191d23;
+  --surface-accent: #1a2521;
+
+  --text-hi: #ffffff;
+  --text: #eef1f4;
+  --text-soft: #e7ebf0;
+  --text-dim: #c3cbd4;
+  --text-toolbtn: #cfd6de;
+  --text-nav: #a5aeb9;
+  --text-muted: #9aa4af;
+  --text-faint: #8d97a3;
+  --text-ghost: #5d6672;
+
+  --line: #1b2027;
+  --line-2: #1e232a;
+  --line-3: #262b32;
+  --line-4: #2d333b;
+  --line-hover: #454d57;
+  --line-dash: #333a44;
+  --line-input: #2a3038;
+  --line-input-focus: #3a434e;
+  --line-bubble: #232830;
+  --line-card: #212630;
+
+  --bar-tint: rgba(255, 255, 255, 0.012);
+  --overlay: rgba(6, 8, 10, 0.76);
+  --dialog-shadow: 0 28px 90px rgba(0, 0, 0, 0.65);
+  --logo-grad: linear-gradient(150deg, #191d22, #101317);
+  --track-bg: #1d2228;
+  --shell-glow-a: rgba(123, 224, 180, 0.09);
+  --shell-glow-b: rgba(224, 194, 123, 0.06);
+
+  --bubble-me-bg: #1f2a26;
+  --bubble-me-line: #31423b;
+
+  --accent: #7be0b4;
+  --accent-bright: #a8ecd0;
+  --accent-ink: #08130e;
+  --accent-line: #26362f;
+  --accent-text: #7be0b4;
+  --accent-text-soft: #a8ecd0;
+  --accent-tint: rgba(123, 224, 180, 0.06);
+  --accent-tint-2: rgba(123, 224, 180, 0.08);
+  --accent-tint-hi: rgba(123, 224, 180, 0.2);
+  --accent-tint-lo: rgba(123, 224, 180, 0.05);
+  --accent-active-bg: rgba(123, 224, 180, 0.07);
+  --files-grad: linear-gradient(180deg, rgba(123, 224, 180, 0.05), rgba(123, 224, 180, 0.015));
+
+  --amber: #e0c27b;
+  --amber-text: #e0c27b;
+  --amber-line: #3a3324;
+  --amber-tint: rgba(224, 194, 123, 0.05);
+
+  --danger: #e0836b;
+
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --sans: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f3f5f8;
+  --surface-0: #ffffff;
+  --surface-1: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #f7f9fb;
+  --surface-4: #eef1f5;
+  --surface-5: #f1f4f7;
+  --surface-6: #eef1f5;
+  --surface-accent: #e6f6ee;
+
+  --text-hi: #0b0f13;
+  --text: #131920;
+  --text-soft: #26313b;
+  --text-dim: #47525d;
+  --text-toolbtn: #3a444e;
+  --text-nav: #55606b;
+  --text-muted: #69737e;
+  --text-faint: #7b8690;
+  --text-ghost: #8a949e;
+
+  --line: #e4e8ed;
+  --line-2: #e1e6eb;
+  --line-3: #d7dce2;
+  --line-4: #c8cfd7;
+  --line-hover: #a7b1bb;
+  --line-dash: #c3cbd3;
+  --line-input: #d1d7de;
+  --line-input-focus: #a9b3bd;
+  --line-bubble: #e3e8ed;
+  --line-card: #e5e9ee;
+
+  --bar-tint: rgba(17, 24, 33, 0.018);
+  --overlay: rgba(22, 30, 40, 0.4);
+  --dialog-shadow: 0 28px 90px rgba(24, 34, 48, 0.22);
+  --logo-grad: linear-gradient(150deg, #ffffff, #eef2f6);
+  --track-bg: #e2e6ec;
+  --shell-glow-a: rgba(123, 224, 180, 0.14);
+  --shell-glow-b: rgba(224, 194, 123, 0.12);
+
+  --bubble-me-bg: #e4f6ec;
+  --bubble-me-line: #bfe6d0;
+
+  --accent-text: #178a5b;
+  --accent-text-soft: #2f9c6d;
+  --accent-line: #bfe6d0;
+  --accent-tint: rgba(23, 138, 91, 0.07);
+  --accent-tint-2: rgba(23, 138, 91, 0.1);
+  --accent-tint-hi: rgba(23, 138, 91, 0.28);
+  --accent-tint-lo: rgba(23, 138, 91, 0.06);
+  --accent-active-bg: rgba(23, 138, 91, 0.1);
+  --files-grad: linear-gradient(180deg, rgba(23, 138, 91, 0.05), rgba(23, 138, 91, 0.015));
+
+  --amber-text: #8a6d22;
+  --amber-line: #e6d6ac;
+  --amber-tint: rgba(224, 194, 123, 0.14);
+
+  --danger: #c34f39;
+}
+
+/* ------------------------------------------------------------------ *
+ * Tailwind theme — token -> utility mapping
+ * ------------------------------------------------------------------ */
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-surface-5: var(--surface-5);
+  --color-surface-6: var(--surface-6);
+  --color-surface-accent: var(--surface-accent);
+
+  --color-text-hi: var(--text-hi);
+  --color-text: var(--text);
+  --color-text-soft: var(--text-soft);
+  --color-text-dim: var(--text-dim);
+  --color-text-toolbtn: var(--text-toolbtn);
+  --color-text-nav: var(--text-nav);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-text-ghost: var(--text-ghost);
+
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-line-3: var(--line-3);
+  --color-line-4: var(--line-4);
+  --color-line-hover: var(--line-hover);
+  --color-line-dash: var(--line-dash);
+  --color-line-input: var(--line-input);
+  --color-line-input-focus: var(--line-input-focus);
+  --color-line-bubble: var(--line-bubble);
+  --color-line-card: var(--line-card);
+
+  --color-bar-tint: var(--bar-tint);
+  --color-overlay: var(--overlay);
+  --color-track: var(--track-bg);
+
+  --color-bubble-me: var(--bubble-me-bg);
+  --color-bubble-me-line: var(--bubble-me-line);
+
+  --color-accent: var(--accent);
+  --color-accent-bright: var(--accent-bright);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-line: var(--accent-line);
+  --color-accent-text: var(--accent-text);
+  --color-accent-text-soft: var(--accent-text-soft);
+  --color-accent-tint: var(--accent-tint);
+  --color-accent-tint-2: var(--accent-tint-2);
+  --color-accent-tint-hi: var(--accent-tint-hi);
+  --color-accent-tint-lo: var(--accent-tint-lo);
+  --color-accent-active: var(--accent-active-bg);
+
+  --color-amber: var(--amber);
+  --color-amber-text: var(--amber-text);
+  --color-amber-line: var(--amber-line);
+  --color-amber-tint: var(--amber-tint);
+
+  --color-danger: var(--danger);
+
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
+
+  --shadow-dialog: var(--dialog-shadow);
+
+  --breakpoint-tablet: 900px;
+  --breakpoint-phone: 720px;
+
+  --animate-rise: rise 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  --animate-dialog: rise 0.26s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  --animate-fadein: fadein 0.3s ease both;
+  --animate-overlay: fadein 0.18s ease both;
+  --animate-blip: blip 1.15s ease-in-out infinite;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fadein {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes blip {
+    0%,
+    60%,
+    100% {
+      opacity: 0.25;
+      transform: translateY(0);
+    }
+    30% {
+      opacity: 1;
+      transform: translateY(-3px);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  a {
+    color: var(--accent-text);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--accent-text-soft);
+  }
+
+  input,
+  button,
+  textarea {
+    font: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line-3);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  [data-nobar] {
+    scrollbar-width: none;
+  }
+  [data-nobar]::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * A few decorative backgrounds that aren't worth spelling out as
+ * arbitrary-value utilities on every element that needs them.
+ * ------------------------------------------------------------------ */
+
+@utility bg-shell {
+  background:
+    radial-gradient(1100px 600px at 78% -8%, var(--shell-glow-a), transparent 60%),
+    radial-gradient(900px 500px at 5% 105%, var(--shell-glow-b), transparent 60%),
+    var(--bg);
+}
+
+@utility bg-card {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface-0));
+}
+
+@utility bg-files {
+  background: var(--files-grad);
+}
+
+@utility bg-logo {
+  background: var(--logo-grad);
+}
+
+@utility mask-fade-r {
+  mask-image: linear-gradient(to right, #000 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 90%, transparent 100%);
+}

@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RagWorkspace } from "./RagWorkspace.tsx";
-import "./styles/global.css";
+import "./styles/app.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
