@@ -96,23 +96,6 @@ function MessageRow({ m }: { m: Message }) {
         ) : (
           m.paras.map((p, i) => <div key={i}>{p}</div>)
         )}
-        {m.cites && m.cites.length > 0 && (
-          <div className="flex flex-col gap-1.5 mt-1 pt-[11px] border-t border-line-bubble">
-            <div className="font-mono text-[9.5px] tracking-[0.14em] text-text-ghost">
-              Where this came from
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {m.cites.map((c, i) => (
-                <span
-                  key={i}
-                  className="font-mono text-[10px] text-accent-text-soft border border-accent-line bg-accent-tint rounded-[6px] px-2 py-[5px]"
-                >
-                  {c}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -385,7 +368,7 @@ export function ChatPanel({
       </div>
 
       <div className="flex-none pt-2.5 px-[18px] pb-3 border-t border-line bg-bar-tint">
-        <div className="flex gap-2 items-center border border-line-input rounded-[13px] bg-surface-1 py-1.5 pr-1.5 pl-1.5 focus-within:border-line-input-focus">
+        <div className="flex gap-2 items-center w-full max-w-[860px] mx-auto border border-line-input rounded-[13px] bg-surface-1 py-1.5 pr-1.5 pl-1.5 focus-within:border-line-input-focus">
           <button
             type="button"
             className="flex-none grid place-items-center w-9 h-9 rounded-[9px] border border-line-input bg-surface-4 text-accent-text cursor-pointer transition-colors duration-[160ms] hover:border-accent hover:text-text-hi"
