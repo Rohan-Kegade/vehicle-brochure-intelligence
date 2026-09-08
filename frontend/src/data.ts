@@ -34,14 +34,6 @@ export const INITIAL_DOCS: Doc[] = [
 /** Library "Type" filter chips (match the brochure `tag` values). */
 export const LIBRARY_TYPE_FILTERS = ["All", "Hatchback", "SUV", "Sedan", "MUV", "EV"] as const;
 
-/** Composer quick prompts. */
-export const SUGGESTIONS: { label: string; q: string }[] = [
-  { label: "Summarise these brochures", q: "Summarise these brochures" },
-  { label: "What should I watch out for?", q: "What should I watch out for?" },
-  { label: "Pull out the key specs", q: "Pull out the key specs" },
-  { label: "Compare these vehicles", q: "Compare these vehicles" },
-];
-
 /** Filenames cycled through by the Upload button. */
 export const UPLOAD_NAMES = [
   "Honda_Elevate_2026_Brochure.pdf",

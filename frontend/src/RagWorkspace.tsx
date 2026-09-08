@@ -5,7 +5,6 @@ import { useTheme } from "./lib/useTheme.ts";
 import { Sidebar } from "./components/Sidebar.tsx";
 import { CollapsedRail } from "./components/CollapsedRail.tsx";
 import { ChatPanel } from "./components/ChatPanel.tsx";
-import { FilesPanel } from "./components/FilesPanel.tsx";
 import { ChatSearchModal } from "./components/ChatSearchModal.tsx";
 import { LibraryModal } from "./components/LibraryModal.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
@@ -26,20 +25,17 @@ export function RagWorkspace(props: RagWorkspaceProps) {
     chatSearchOpen,
     settingsOpen,
     libOpen,
-    filesOpen,
     closeChatSearch,
     closeSettings,
     closeLib,
-    closeFiles,
   } = w;
   useEffect(() => {
-    if (!chatSearchOpen && !settingsOpen && !libOpen && !filesOpen) return;
+    if (!chatSearchOpen && !settingsOpen && !libOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (chatSearchOpen) closeChatSearch();
       else if (settingsOpen) closeSettings();
       else if (libOpen) closeLib();
-      else closeFiles();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -47,18 +43,15 @@ export function RagWorkspace(props: RagWorkspaceProps) {
     chatSearchOpen,
     settingsOpen,
     libOpen,
-    filesOpen,
     closeChatSearch,
     closeSettings,
     closeLib,
-    closeFiles,
   ]);
 
   return (
     <div
       className="group/shell h-screen [height:100dvh] min-h-[420px] overflow-hidden flex items-stretch bg-shell transition-colors duration-200"
       data-nav={w.navOpen ? "open" : "closed"}
-      data-files={w.filesOpen ? "open" : "closed"}
     >
       {w.isMobile ? (
         <Sidebar
@@ -180,7 +173,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           </div>
         </header>
 
-        <div className="flex-1 min-h-0 flex flex-nowrap gap-[18px] items-stretch max-tablet:flex-wrap max-tablet:overflow-y-auto max-phone:flex-nowrap max-phone:overflow-visible max-phone:gap-0">
+        <div className="flex-1 min-h-0 flex max-tablet:overflow-y-auto">
           <ChatPanel
             messages={w.messages}
             typing={w.typing}
@@ -188,30 +181,15 @@ export function RagWorkspace(props: RagWorkspaceProps) {
             scrollRef={w.scrollRef}
             onDraft={w.setDraft}
             onSubmit={w.submit}
-            onSuggest={w.ask}
             canChat={w.canChat}
-            filesOpen={w.filesOpen}
-            activeCount={w.activeCount}
-            onToggleFiles={w.toggleFiles}
-          />
-          <FilesPanel
             contextDocs={w.contextDocs}
-            activeCount={w.activeCount}
-            onToggleOn={w.toggleOn}
-            onRemove={w.toggleAdd}
-            onAdd={w.openLib}
-            onClose={w.closeFiles}
+            isMobile={w.isMobile}
+            onOpenLibrary={w.openLib}
+            onToggleDoc={w.toggleOn}
+            onRemoveDoc={w.toggleAdd}
           />
         </div>
       </div>
-
-      <button
-        type="button"
-        className={`${scrim} max-phone:z-[74] group-data-[files=open]/shell:max-phone:opacity-100 group-data-[files=open]/shell:max-phone:pointer-events-auto`}
-        aria-label="Hide chat context"
-        tabIndex={-1}
-        onClick={w.closeFiles}
-      />
 
       {w.chatSearchOpen && (
         <ChatSearchModal

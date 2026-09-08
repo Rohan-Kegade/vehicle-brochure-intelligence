@@ -1,12 +1,17 @@
+import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { Message } from "../types.ts";
-import { ACCOUNT, SUGGESTIONS } from "../data.ts";
-import { card, cardLabel, iconSvgProps, onlyMobile, toolBtn, toolBtnHover } from "./ui.ts";
+import type { Doc, Message } from "../types.ts";
+import { ACCOUNT } from "../data.ts";
+import { card, cardLabel, iconSvgProps } from "./ui.ts";
 
 /** First name of the signed-in user, for the greeting. */
 const FIRST_NAME = ACCOUNT.name.trim().split(/\s+/)[0];
+
+/** How many context chips sit inline before the rest fold into "+N more". */
+const CHIPS_SHOWN_MOBILE = 2;
+const CHIPS_SHOWN_DESKTOP = 6;
 
 /** Time-of-day greeting. */
 function greeting() {
@@ -47,7 +52,7 @@ function ChatEmptyState({ canChat }: { canChat: boolean }) {
       <p className="max-w-[380px] text-[13.5px] leading-[1.6] text-text-dim [text-wrap:pretty]">
         {canChat
           ? "Ask anything about the brochures in your chat context. I answer straight from the pages and show you where each answer came from."
-          : "Add a brochure to your chat context to get started. I only answer from the brochures you add — and I'll always point to the page each answer came from."}
+          : "Add a brochure with the + button to get started. I only answer from the brochures you add — and I'll always point to the page each answer came from."}
       </p>
     </div>
   );
@@ -65,13 +70,18 @@ interface ChatPanelProps {
   scrollRef: React.RefObject<HTMLDivElement | null>;
   onDraft: (v: string) => void;
   onSubmit: () => void;
-  onSuggest: (q: string) => void;
   /** False until a brochure is in the chat context — locks the composer. */
   canChat: boolean;
-  /** Chat-context sheet state — the toggle lives in this strip on mobile. */
-  filesOpen: boolean;
-  activeCount: number;
-  onToggleFiles: () => void;
+  /** Brochures in the chat context, shown as chips above the composer. */
+  contextDocs: Doc[];
+  /** Narrow viewport — folds the chip list sooner. */
+  isMobile: boolean;
+  /** Open the library modal to add brochures. */
+  onOpenLibrary: () => void;
+  /** Pause / resume a brochure without removing it. */
+  onToggleDoc: (id: string) => void;
+  /** Drop a brochure from the chat context. */
+  onRemoveDoc: (id: string) => void;
 }
 
 function MessageRow({ m }: { m: Message }) {
@@ -119,6 +129,199 @@ function MessageRow({ m }: { m: Message }) {
   );
 }
 
+/** One brochure in the chat context: a pill that pauses on click and removes
+ * via its trailing ×. Sits in the strip above the composer. */
+function ContextChip({
+  doc,
+  onToggle,
+  onRemove,
+}: {
+  doc: Doc;
+  onToggle: (id: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const name = doc.title.replace(/\.pdf$/i, "");
+  return (
+    <div className="flex-none flex items-center rounded-full border border-line-input bg-surface-4 transition-colors duration-[160ms]">
+      <button
+        type="button"
+        className={`flex items-center gap-1.5 min-w-0 pl-[13px] pr-2 py-2 text-[12.5px] cursor-pointer hover:text-text ${
+          doc.on ? "text-text-dim" : "text-text-ghost"
+        }`}
+        title={doc.on ? "Pause this brochure" : "Use this brochure"}
+        aria-pressed={doc.on}
+        onClick={() => onToggle(doc.id)}
+      >
+        <span
+          className={`flex-none w-1.5 h-1.5 rounded-full ${
+            doc.on ? "bg-accent" : "bg-text-ghost"
+          }`}
+        />
+        <span className={`truncate max-w-[160px] ${doc.on ? "" : "line-through"}`}>
+          {name}
+        </span>
+      </button>
+      <button
+        type="button"
+        className="flex-none grid place-items-center w-7 h-7 mr-1 rounded-full text-text-faint text-[13px] leading-none cursor-pointer hover:bg-surface-6 hover:text-text"
+        title="Remove from chat context"
+        aria-label={`Remove ${name} from chat context`}
+        onClick={() => onRemove(doc.id)}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+/** A brochure row inside the "+N more" popover — scan-and-remove, no scrolling
+ * sideways. Same click targets as a chip: body pauses, × removes. */
+function MoreRow({
+  doc,
+  onToggle,
+  onRemove,
+}: {
+  doc: Doc;
+  onToggle: (id: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const name = doc.title.replace(/\.pdf$/i, "");
+  return (
+    <div className="flex items-center gap-2 rounded-[8px] px-2 py-1.5 hover:bg-surface-4">
+      <button
+        type="button"
+        className="flex items-center gap-2 min-w-0 flex-1 text-left text-[12.5px] cursor-pointer"
+        title={doc.on ? "Pause this brochure" : "Use this brochure"}
+        aria-pressed={doc.on}
+        onClick={() => onToggle(doc.id)}
+      >
+        <span
+          className={`flex-none w-1.5 h-1.5 rounded-full ${
+            doc.on ? "bg-accent" : "bg-text-ghost"
+          }`}
+        />
+        <span
+          className={`truncate ${doc.on ? "text-text-dim" : "text-text-ghost line-through"}`}
+        >
+          {name}
+        </span>
+      </button>
+      <button
+        type="button"
+        className="flex-none grid place-items-center w-6 h-6 rounded-full text-text-faint text-[13px] leading-none cursor-pointer hover:bg-surface-6 hover:text-text"
+        title="Remove from chat context"
+        aria-label={`Remove ${name} from chat context`}
+        onClick={() => onRemove(doc.id)}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+/** The chip strip above the composer: the first few brochures inline, the rest
+ * folded behind a "+N more" popover so the row never scrolls sideways. */
+function ContextChips({
+  docs,
+  isMobile,
+  onToggleDoc,
+  onRemoveDoc,
+}: {
+  docs: Doc[];
+  isMobile: boolean;
+  onToggleDoc: (id: string) => void;
+  onRemoveDoc: (id: string) => void;
+}) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement | null>(null);
+
+  const limit = isMobile ? CHIPS_SHOWN_MOBILE : CHIPS_SHOWN_DESKTOP;
+  const inline = docs.slice(0, limit);
+  const overflow = docs.slice(limit);
+
+  // Close the popover once there's nothing left to overflow.
+  useEffect(() => {
+    if (overflow.length === 0) setMoreOpen(false);
+  }, [overflow.length]);
+
+  // Dismiss on outside click / Esc while it's open.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") setMoreOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [moreOpen]);
+
+  if (docs.length === 0) {
+    return (
+      <div className="flex items-center gap-2 mb-[11px]">
+        <span className="text-[12px] text-text-ghost py-2">
+          No brochures in this chat yet — add one with the + button.
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 mb-[11px]">
+      <div
+        className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto mask-fade-r"
+        data-nobar="1"
+      >
+        {inline.map((d) => (
+          <ContextChip key={d.id} doc={d} onToggle={onToggleDoc} onRemove={onRemoveDoc} />
+        ))}
+      </div>
+
+      {overflow.length > 0 && (
+        <div className="relative flex-none" ref={moreRef}>
+          <button
+            type="button"
+            className="flex items-center h-9 px-3 rounded-full border border-line-input bg-surface-4 text-text-dim text-[12.5px] cursor-pointer transition-colors duration-[160ms] hover:border-accent hover:text-text"
+            aria-haspopup="menu"
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen((v) => !v)}
+          >
+            +{overflow.length} more
+          </button>
+
+          {moreOpen && (
+            <div
+              role="menu"
+              className="absolute bottom-full right-0 mb-2 z-20 w-[264px] max-w-[calc(100vw-40px)] max-h-[240px] overflow-y-auto rounded-[12px] border border-line-3 bg-surface-2 shadow-dialog p-1.5 animate-fadein"
+            >
+              <div className="font-mono text-[9px] tracking-[0.14em] text-text-ghost px-2 pt-1.5 pb-2">
+                {overflow.length} more in context
+              </div>
+              <div className="flex flex-col">
+                {overflow.map((d) => (
+                  <MoreRow
+                    key={d.id}
+                    doc={d}
+                    onToggle={onToggleDoc}
+                    onRemove={onRemoveDoc}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** The conversation column: header strip, transcript, and composer. */
 export function ChatPanel({
   messages,
@@ -127,11 +330,12 @@ export function ChatPanel({
   scrollRef,
   onDraft,
   onSubmit,
-  onSuggest,
   canChat,
-  filesOpen,
-  activeCount,
-  onToggleFiles,
+  contextDocs,
+  isMobile,
+  onOpenLibrary,
+  onToggleDoc,
+  onRemoveDoc,
 }: ChatPanelProps) {
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -142,26 +346,10 @@ export function ChatPanel({
 
   return (
     <section
-      className={`${card} flex-[4_1_0%] min-w-[280px] max-tablet:flex-[1_1_100%] max-tablet:min-h-[420px] max-tablet:max-w-none max-phone:flex-auto max-phone:min-w-0 max-phone:min-h-0`}
+      className={`${card} flex-1 min-w-0 max-tablet:min-h-[420px] max-phone:flex-auto max-phone:min-h-0`}
     >
-      <div className="flex-none flex items-center justify-between gap-2 px-4 h-[46px] border-b border-line bg-bar-tint">
+      <div className="flex-none flex items-center gap-2 px-4 h-[46px] border-b border-line bg-bar-tint">
         <span className={cardLabel}>Chat</span>
-        <button
-          className={`${toolBtn} ${toolBtnHover} p-[7px] ${onlyMobile}`}
-          aria-label="Show chat context"
-          aria-pressed={filesOpen}
-          onClick={onToggleFiles}
-        >
-          <svg {...iconSvgProps}>
-            <rect x="3" y="4" width="18" height="16" rx="2" />
-            <path d="M15 4v16" />
-          </svg>
-          {activeCount > 0 && (
-            <span className="absolute -top-[5px] -right-[5px] min-w-[15px] h-[15px] px-[3px] rounded-full bg-accent text-accent-ink font-mono text-[9px] font-semibold leading-[15px] text-center">
-              {activeCount}
-            </span>
-          )}
-        </button>
       </div>
 
       <div
@@ -189,21 +377,26 @@ export function ChatPanel({
       </div>
 
       <div className="flex-none pt-2.5 px-[18px] pb-3 border-t border-line bg-bar-tint">
-        <div className="flex gap-2 mb-[11px] overflow-x-auto mask-fade-r" data-nobar="1">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s.label}
-              disabled={!canChat}
-              className="flex-none whitespace-nowrap px-[13px] py-2 rounded-full border border-line-input bg-surface-4 text-text-dim text-[12.5px] cursor-pointer transition-all duration-[180ms] hover:border-accent hover:text-text hover:bg-surface-accent disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-line-input disabled:hover:text-text-dim disabled:hover:bg-surface-4"
-              onClick={() => onSuggest(s.q)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2.5 items-center border border-line-input rounded-[13px] bg-surface-1 py-1.5 pr-1.5 pl-[15px] focus-within:border-line-input-focus">
+        <ContextChips
+          docs={contextDocs}
+          isMobile={isMobile}
+          onToggleDoc={onToggleDoc}
+          onRemoveDoc={onRemoveDoc}
+        />
+        <div className="flex gap-2 items-center border border-line-input rounded-[13px] bg-surface-1 py-1.5 pr-1.5 pl-1.5 focus-within:border-line-input-focus">
+          <button
+            type="button"
+            className="flex-none grid place-items-center w-9 h-9 rounded-[9px] border border-line-input bg-surface-4 text-accent-text cursor-pointer transition-colors duration-[160ms] hover:border-accent hover:text-text-hi"
+            title="Add a brochure to the chat context"
+            aria-label="Add a brochure to the chat context"
+            onClick={onOpenLibrary}
+          >
+            <svg {...iconSvgProps}>
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
           <input
-            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[14.5px] py-[9px] max-phone:text-base disabled:cursor-not-allowed"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[14.5px] py-[9px] px-1 max-phone:text-base disabled:cursor-not-allowed"
             value={draft}
             disabled={!canChat}
             onChange={(e) => onDraft(e.target.value)}

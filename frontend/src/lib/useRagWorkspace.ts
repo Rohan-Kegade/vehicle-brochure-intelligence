@@ -75,11 +75,6 @@ export interface RagWorkspaceModel {
   selectChat: (id: string) => void;
   newChat: () => void;
 
-  // files panel (bottom sheet on mobile)
-  filesOpen: boolean;
-  toggleFiles: () => void;
-  closeFiles: () => void;
-
   // settings modal
   settingsOpen: boolean;
   openSettings: () => void;
@@ -121,7 +116,6 @@ export function useRagWorkspace({
   const [libOpen, setLibOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(matchesMobile);
   const [navOpen, setNavOpen] = useState(() => !matchesMobile());
-  const [filesOpen, setFilesOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
   const [chatQuery, setChatQuery] = useState("");
@@ -196,7 +190,6 @@ export function useRagWorkspace({
     const onChange = () => {
       setIsMobile(mq.matches);
       setNavOpen(!mq.matches);
-      if (mq.matches) setFilesOpen(false);
     };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
@@ -535,14 +528,9 @@ export function useRagWorkspace({
     selectChat,
     newChat,
 
-    filesOpen,
-    toggleFiles: () => setFilesOpen((v) => !v),
-    closeFiles: () => setFilesOpen(false),
-
     settingsOpen,
     openSettings: () => {
       setSettingsOpen(true);
-      setFilesOpen(false);
       setNavOpen((v) => (matchesMobile() ? false : v));
     },
     closeSettings: () => setSettingsOpen(false),
@@ -553,7 +541,6 @@ export function useRagWorkspace({
     openChatSearch: () => {
       setChatSearchOpen(true);
       setNavOpen((v) => (matchesMobile() ? false : v));
-      setFilesOpen(false);
     },
     closeChatSearch: () => {
       setChatSearchOpen(false);
@@ -564,7 +551,6 @@ export function useRagWorkspace({
     libOpen,
     openLib: () => {
       setLibOpen(true);
-      setFilesOpen(false);
     },
     closeLib: () => {
       setLibOpen(false);

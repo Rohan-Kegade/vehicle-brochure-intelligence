@@ -63,7 +63,6 @@
   --accent-tint-hi: rgba(123, 224, 180, 0.2);
   --accent-tint-lo: rgba(123, 224, 180, 0.05);
   --accent-active-bg: rgba(123, 224, 180, 0.07);
-  --files-grad: linear-gradient(180deg, rgba(123, 224, 180, 0.05), rgba(123, 224, 180, 0.015));
 
   --amber: #e0c27b;
   --amber-text: #e0c27b;
@@ -129,7 +128,6 @@
   --accent-tint-hi: rgba(23, 138, 91, 0.28);
   --accent-tint-lo: rgba(23, 138, 91, 0.06);
   --accent-active-bg: rgba(23, 138, 91, 0.1);
-  --files-grad: linear-gradient(180deg, rgba(23, 138, 91, 0.05), rgba(23, 138, 91, 0.015));
 
   --amber-text: #8a6d22;
   --amber-line: #e6d6ac;
@@ -342,10 +340,6 @@
 
 @utility bg-card {
   background: linear-gradient(180deg, var(--surface-2), var(--surface-0));
-}
-
-@utility bg-files {
-  background: var(--files-grad);
 }
 
 @utility bg-logo {
