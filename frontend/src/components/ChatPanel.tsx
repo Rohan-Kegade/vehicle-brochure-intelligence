@@ -3,8 +3,8 @@ import type { KeyboardEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Doc, Message } from "../types.ts";
-import { ACCOUNT } from "../data.ts";
-import { card, cardLabel, iconSvgProps } from "./ui.ts";
+import { ACCOUNT, MAX_CONTEXT } from "../data.ts";
+import { card, iconSvgProps } from "./ui.ts";
 
 /** First name of the signed-in user, for the greeting. */
 const FIRST_NAME = ACCOUNT.name.trim().split(/\s+/)[0];
@@ -72,11 +72,11 @@ interface ChatPanelProps {
   onSubmit: () => void;
   /** False until a brochure is in the chat context — locks the composer. */
   canChat: boolean;
-  /** Brochures in the chat context, shown as chips above the composer. */
+  /** Brochures in the chat context, shown as chips in the header bar. */
   contextDocs: Doc[];
   /** Narrow viewport — folds the chip list sooner. */
   isMobile: boolean;
-  /** Open the library modal to add brochures. */
+  /** Open the library modal to add / manage brochures. */
   onOpenLibrary: () => void;
   /** Pause / resume a brochure without removing it. */
   onToggleDoc: (id: string) => void;
@@ -219,9 +219,9 @@ function MoreRow({
   );
 }
 
-/** The chip strip above the composer: the first few brochures inline, the rest
- * folded behind a "+N more" popover so the row never scrolls sideways. */
-function ContextChips({
+/** The chat header's context bar: the first few brochures inline, the rest
+ * folded behind a "+N" popover, then the "in context / limit" count. */
+function ContextBar({
   docs,
   isMobile,
   onToggleDoc,
@@ -263,24 +263,35 @@ function ContextChips({
     };
   }, [moreOpen]);
 
-  if (docs.length === 0) {
-    return (
-      <div className="flex items-center gap-2 mb-[11px]">
-        <span className="text-[12px] text-text-ghost py-2">
-          No brochures in this chat yet — add one with the + button.
-        </span>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center gap-2 mb-[11px]">
+    <div className="flex-1 min-w-0 flex items-center gap-2.5">
+      <span
+        className="flex-none flex items-center text-text-ghost"
+        role="img"
+        aria-label={
+          docs.length === 0 ? "No brochures in this chat" : "Brochures in this chat"
+        }
+        title={
+          docs.length === 0 ? "No brochures in this chat" : "Brochures in this chat"
+        }
+      >
+        <svg {...iconSvgProps}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6" />
+          <path d="M9 15h6" />
+        </svg>
+      </span>
       <div
         className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto mask-fade-r"
         data-nobar="1"
       >
         {inline.map((d) => (
-          <ContextChip key={d.id} doc={d} onToggle={onToggleDoc} onRemove={onRemoveDoc} />
+          <ContextChip
+            key={d.id}
+            doc={d}
+            onToggle={onToggleDoc}
+            onRemove={onRemoveDoc}
+          />
         ))}
       </div>
 
@@ -288,18 +299,18 @@ function ContextChips({
         <div className="relative flex-none" ref={moreRef}>
           <button
             type="button"
-            className="flex items-center h-9 px-3 rounded-full border border-line-input bg-surface-4 text-text-dim text-[12.5px] cursor-pointer transition-colors duration-[160ms] hover:border-accent hover:text-text"
+            className="flex items-center h-8 px-2.5 rounded-full border border-line-input bg-surface-4 text-text-dim text-[12px] cursor-pointer transition-colors duration-[160ms] hover:border-accent hover:text-text"
             aria-haspopup="menu"
             aria-expanded={moreOpen}
             onClick={() => setMoreOpen((v) => !v)}
           >
-            +{overflow.length} more
+            +{overflow.length}
           </button>
 
           {moreOpen && (
             <div
               role="menu"
-              className="absolute bottom-full right-0 mb-2 z-20 w-[264px] max-w-[calc(100vw-40px)] max-h-[240px] overflow-y-auto rounded-[12px] border border-line-3 bg-surface-2 shadow-dialog p-1.5 animate-fadein"
+              className="absolute top-full right-0 mt-2 z-30 w-[264px] max-w-[calc(100vw-40px)] max-h-[260px] overflow-y-auto rounded-[12px] border border-line-3 bg-surface-2 shadow-dialog p-1.5 animate-fadein"
             >
               <div className="font-mono text-[9px] tracking-[0.14em] text-text-ghost px-2 pt-1.5 pb-2">
                 {overflow.length} more in context
@@ -318,6 +329,13 @@ function ContextChips({
           )}
         </div>
       )}
+
+      <span
+        className="flex-none font-mono text-[11px] text-text-muted tabular-nums"
+        title={`${docs.length} of ${MAX_CONTEXT} brochures in context`}
+      >
+        {docs.length}/{MAX_CONTEXT}
+      </span>
     </div>
   );
 }
@@ -348,8 +366,13 @@ export function ChatPanel({
     <section
       className={`${card} flex-1 min-w-0 max-tablet:min-h-[420px] max-phone:flex-auto max-phone:min-h-0`}
     >
-      <div className="flex-none flex items-center gap-2 px-4 h-[46px] border-b border-line bg-bar-tint">
-        <span className={cardLabel}>Chat</span>
+      <div className="flex-none flex items-center gap-2 px-3 h-[46px] border-b border-line bg-bar-tint">
+        <ContextBar
+          docs={contextDocs}
+          isMobile={isMobile}
+          onToggleDoc={onToggleDoc}
+          onRemoveDoc={onRemoveDoc}
+        />
       </div>
 
       <div
@@ -377,12 +400,6 @@ export function ChatPanel({
       </div>
 
       <div className="flex-none pt-2.5 px-[18px] pb-3 border-t border-line bg-bar-tint">
-        <ContextChips
-          docs={contextDocs}
-          isMobile={isMobile}
-          onToggleDoc={onToggleDoc}
-          onRemoveDoc={onRemoveDoc}
-        />
         <div className="flex gap-2 items-center border border-line-input rounded-[13px] bg-surface-1 py-1.5 pr-1.5 pl-1.5 focus-within:border-line-input-focus">
           <button
             type="button"
