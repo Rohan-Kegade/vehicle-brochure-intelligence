@@ -46,7 +46,13 @@ export interface RagWorkspaceModel {
   // header / retrieval
   retrievalMode: RetrievalMode;
   activeChatTitle: string;
-  deleteChat: () => void;
+  /** Remove a chat by id (no confirmation — see requestDeleteChat). */
+  deleteChat: (id: string) => void;
+  /** Chat queued for deletion, driving the confirm modal. */
+  pendingDeleteChat: Chat | null;
+  requestDeleteChat: (id: string) => void;
+  confirmDeleteChat: () => void;
+  cancelDeleteChat: () => void;
   shareChat: () => void;
   shareCopied: boolean;
 
@@ -121,6 +127,7 @@ export function useRagWorkspace({
   const [chatQuery, setChatQuery] = useState("");
   const [activeChat, setActiveChat] = useState("c1");
   const [chats, setChats] = useState<Chat[]>(INITIAL_CHATS);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [docs, setDocs] = useState<Doc[]>(USE_MOCK ? INITIAL_DOCS : []);
 
   const [indexing, setIndexing] = useState(false);
@@ -432,18 +439,29 @@ export function useRagWorkspace({
     dismissDrawer();
   }, [reset, dismissDrawer]);
 
-  const deleteChat = useCallback(() => {
-    const rest = chats.filter((c) => c.id !== activeChat);
-    if (rest.length) {
-      setChats(rest);
-      setActiveChat(rest[0].id);
-    } else {
-      const id = `n${Date.now()}`;
-      setChats([{ id, title: "New chat", when: "Just now" }]);
-      setActiveChat(id);
-    }
-    reset();
-  }, [chats, activeChat, reset]);
+  const deleteChat = useCallback(
+    (id: string) => {
+      const rest = chats.filter((c) => c.id !== id);
+      const wasActive = id === activeChat;
+      if (rest.length) {
+        setChats(rest);
+        if (wasActive) setActiveChat(rest[0].id);
+      } else {
+        const nid = `n${Date.now()}`;
+        setChats([{ id: nid, title: "New chat", when: "Just now" }]);
+        setActiveChat(nid);
+      }
+      if (wasActive) reset();
+    },
+    [chats, activeChat, reset],
+  );
+
+  const requestDeleteChat = useCallback((id: string) => setPendingDeleteId(id), []);
+  const cancelDeleteChat = useCallback(() => setPendingDeleteId(null), []);
+  const confirmDeleteChat = useCallback(() => {
+    if (pendingDeleteId) deleteChat(pendingDeleteId);
+    setPendingDeleteId(null);
+  }, [pendingDeleteId, deleteChat]);
 
   const shareChat = useCallback(() => {
     const url = `${window.location.origin}/chat/${activeChat}`;
@@ -490,6 +508,11 @@ export function useRagWorkspace({
     [chats, activeChat],
   );
 
+  const pendingDeleteChat = useMemo(
+    () => chats.find((c) => c.id === pendingDeleteId) ?? null,
+    [chats, pendingDeleteId],
+  );
+
   return {
     messages,
     typing,
@@ -504,6 +527,10 @@ export function useRagWorkspace({
     retrievalMode,
     activeChatTitle,
     deleteChat,
+    pendingDeleteChat,
+    requestDeleteChat,
+    confirmDeleteChat,
+    cancelDeleteChat,
     shareChat,
     shareCopied,
 

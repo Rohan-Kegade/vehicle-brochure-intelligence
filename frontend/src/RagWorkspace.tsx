@@ -8,6 +8,7 @@ import { ChatPanel } from "./components/ChatPanel.tsx";
 import { ChatSearchModal } from "./components/ChatSearchModal.tsx";
 import { LibraryModal } from "./components/LibraryModal.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
+import { ConfirmModal } from "./components/ConfirmModal.tsx";
 import { iconSvgProps as svgProps, onlyMobile, toolBtn, toolBtnHover } from "./components/ui.ts";
 
 const scrim =
@@ -18,22 +19,25 @@ const scrim =
  */
 export function RagWorkspace(props: RagWorkspaceProps) {
   const w = useRagWorkspace(props);
-  const { theme, setTheme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   // Esc closes whichever overlay is open, outermost first
   const {
     chatSearchOpen,
     settingsOpen,
     libOpen,
+    pendingDeleteChat,
     closeChatSearch,
     closeSettings,
     closeLib,
+    cancelDeleteChat,
   } = w;
   useEffect(() => {
-    if (!chatSearchOpen && !settingsOpen && !libOpen) return;
+    if (!chatSearchOpen && !settingsOpen && !libOpen && !pendingDeleteChat) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (chatSearchOpen) closeChatSearch();
+      if (pendingDeleteChat) cancelDeleteChat();
+      else if (chatSearchOpen) closeChatSearch();
       else if (settingsOpen) closeSettings();
       else if (libOpen) closeLib();
     };
@@ -43,9 +47,11 @@ export function RagWorkspace(props: RagWorkspaceProps) {
     chatSearchOpen,
     settingsOpen,
     libOpen,
+    pendingDeleteChat,
     closeChatSearch,
     closeSettings,
     closeLib,
+    cancelDeleteChat,
   ]);
 
   return (
@@ -62,6 +68,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           onOpenChatSearch={w.openChatSearch}
           onOpenSettings={w.openSettings}
           onCollapse={w.toggleNav}
+          onRequestDeleteChat={w.requestDeleteChat}
         />
       ) : (
         <div
@@ -82,6 +89,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
               onOpenChatSearch={w.openChatSearch}
               onOpenSettings={w.openSettings}
               onCollapse={w.toggleNav}
+              onRequestDeleteChat={w.requestDeleteChat}
             />
           </div>
           <div
@@ -125,38 +133,6 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           </div>
 
           <div className="flex items-center gap-[9px] max-phone:gap-1.5">
-            <button
-              className={`${toolBtn} ${toolBtnHover} p-[9px]`}
-              title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-              aria-label="Toggle colour theme"
-              onClick={toggleTheme}
-            >
-              {theme === "dark" ? (
-                <svg {...svgProps}>
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-                </svg>
-              ) : (
-                <svg {...svgProps}>
-                  <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
-                </svg>
-              )}
-            </button>
-
-            <button
-              className={`${toolBtn} p-[9px] hover:border-danger hover:text-danger`}
-              title="Delete chat"
-              aria-label="Delete chat"
-              onClick={w.deleteChat}
-            >
-              <svg {...svgProps}>
-                <path d="M3 6h18" />
-                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                <path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
-                <path d="M10 11v6M14 11v6" />
-              </svg>
-            </button>
-
             <button
               className={`${toolBtn} ${toolBtnHover} p-[9px]`}
               title={w.shareCopied ? "Link copied" : "Share"}
@@ -227,6 +203,17 @@ export function RagWorkspace(props: RagWorkspaceProps) {
 
       {w.settingsOpen && (
         <SettingsModal theme={theme} onTheme={setTheme} onClose={w.closeSettings} />
+      )}
+
+      {w.pendingDeleteChat && (
+        <ConfirmModal
+          title="Delete chat?"
+          message={`“${w.pendingDeleteChat.title}” and its messages will be permanently removed. This can't be undone.`}
+          confirmLabel="Delete chat"
+          destructive
+          onConfirm={w.confirmDeleteChat}
+          onClose={w.cancelDeleteChat}
+        />
       )}
     </div>
   );
