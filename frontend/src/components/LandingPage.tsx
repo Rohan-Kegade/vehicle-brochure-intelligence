@@ -1,4 +1,5 @@
 import type { ComponentProps } from "react";
+import { ArrowRight } from "lucide-react";
 import { NavLink } from "./NavLink.tsx";
 
 interface LandingPageProps {
@@ -228,7 +229,12 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 className="flex items-center gap-3.5 rounded-[12px] border border-line-card bg-surface-3 px-4 py-3.5 text-[14px] text-text-soft transition-colors duration-150 hover:border-accent hover:bg-surface-accent"
               >
                 <span className="min-w-0 flex-1 [text-wrap:pretty]">{q}</span>
-                <span className="flex-none font-mono text-[12px] text-accent-text">→</span>
+                <ArrowRight
+                  size={15}
+                  strokeWidth={1.8}
+                  className="flex-none text-accent-text"
+                  aria-hidden
+                />
               </Go>
             ))}
           </div>
@@ -239,8 +245,9 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       <section className={sectionShell}>
         <div className="mb-[22px] flex flex-wrap items-baseline justify-between gap-3.5">
           <div className={eyebrow}>IN THE LIBRARY</div>
-          <Go className="text-[13.5px] text-accent-text hover:text-accent-text-soft">
-            See all 840 brochures →
+          <Go className="inline-flex items-center gap-1.5 text-[13.5px] text-accent-text hover:text-accent-text-soft">
+            See all 840 brochures
+            <ArrowRight size={14} strokeWidth={1.8} aria-hidden />
           </Go>
         </div>
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(210px,1fr))]">

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Menu, Share2 } from "lucide-react";
 import type { RagWorkspaceProps } from "./types.ts";
 import { useRagWorkspace } from "./lib/useRagWorkspace.ts";
 import { useTheme } from "./lib/useTheme.ts";
@@ -9,12 +10,7 @@ import { ChatSearchModal } from "./components/ChatSearchModal.tsx";
 import { LibraryModal } from "./components/LibraryModal.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
 import { ConfirmModal } from "./components/ConfirmModal.tsx";
-import {
-  iconSvgProps as svgProps,
-  onlyMobile,
-  toolBtn,
-  toolBtnHover,
-} from "./components/ui.ts";
+import { onlyMobile, toolBtn, toolBtnHover } from "./components/ui.ts";
 
 const scrim =
   "hidden fixed inset-0 border-0 bg-overlay cursor-pointer max-phone:block max-phone:opacity-0 max-phone:pointer-events-none max-phone:transition-opacity max-phone:duration-200";
@@ -129,9 +125,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
             aria-label="Open menu"
             onClick={w.toggleNav}
           >
-            <svg {...svgProps}>
-              <path d="M3 6h18M3 12h18M3 18h18" />
-            </svg>
+            <Menu size={15} strokeWidth={1.8} aria-hidden />
           </button>
 
           <div className="flex-1 min-w-0 text-base font-semibold tracking-[-0.2px] truncate max-phone:text-[15px]">
@@ -145,15 +139,12 @@ export function RagWorkspace(props: RagWorkspaceProps) {
               aria-label="Share chat"
               onClick={w.shareChat}
             >
-              <svg
+              <Share2
                 className={w.shareCopied ? "text-accent" : "text-accent-text"}
-                {...svgProps}
-              >
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
-              </svg>
+                size={15}
+                strokeWidth={1.8}
+                aria-hidden
+              />
             </button>
           </div>
         </header>

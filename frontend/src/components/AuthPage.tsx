@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { Check, Eye, EyeOff } from "lucide-react";
 import { NavLink } from "./NavLink.tsx";
 
 interface AuthPageProps {
@@ -146,11 +147,16 @@ export function AuthPage({ mode, onNavigate }: AuthPageProps) {
                 />
                 <button
                   type="button"
-                  className="flex-none cursor-pointer border-0 bg-transparent p-1.5 font-mono text-[10px] tracking-[0.08em] text-text-muted hover:text-text-hi"
+                  className="flex-none grid place-items-center cursor-pointer border-0 bg-transparent p-1.5 text-text-muted hover:text-text-hi"
                   onClick={() => setShowPw((v) => !v)}
                   aria-pressed={showPw}
+                  aria-label={showPw ? "Hide password" : "Show password"}
                 >
-                  {showPw ? "HIDE" : "SHOW"}
+                  {showPw ? (
+                    <EyeOff size={16} strokeWidth={1.8} aria-hidden />
+                  ) : (
+                    <Eye size={16} strokeWidth={1.8} aria-hidden />
+                  )}
                 </button>
               </div>
               {signup && (
@@ -209,8 +215,8 @@ export function AuthPage({ mode, onNavigate }: AuthPageProps) {
         <div className="flex flex-col gap-[13px] rounded-[16px] border border-line-2 bg-surface-2 p-[18px]">
           {PERKS.map((p) => (
             <div key={p.title} className="flex items-start gap-3">
-              <span className="mt-px grid h-5 w-5 flex-none place-items-center rounded-[6px] border border-accent-line bg-accent-tint-2 font-mono text-[10px] text-accent-text">
-                ✓
+              <span className="mt-px grid h-5 w-5 flex-none place-items-center rounded-[6px] border border-accent-line bg-accent-tint-2 text-accent-text">
+                <Check size={12} strokeWidth={2.4} aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="text-[13.5px] text-text-soft">{p.title}</div>

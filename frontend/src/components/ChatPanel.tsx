@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { FileText, MessageSquare, Plus, X } from "lucide-react";
 import type { Doc, Message } from "../types.ts";
 import { ACCOUNT, MAX_CONTEXT } from "../data.ts";
-import { card, iconSvgProps } from "./ui.ts";
+import { card } from "./ui.ts";
 
 /** First name of the signed-in user, for the greeting. */
 const FIRST_NAME = ACCOUNT.name.trim().split(/\s+/)[0];
@@ -29,19 +30,7 @@ function ChatEmptyState({ canChat }: { canChat: boolean }) {
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-3 px-6 py-8 animate-rise">
       <div className="flex-none w-11 h-11 rounded-[13px] border border-line-bubble bg-surface-5 flex items-center justify-center text-accent-text">
-        <svg
-          width={20}
-          height={20}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.7}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
+        <MessageSquare size={20} strokeWidth={1.7} aria-hidden />
       </div>
       <div className="font-mono text-[10px] tracking-[0.14em] text-text-muted">
         ASK MY BROCHURES
@@ -168,7 +157,7 @@ function ContextChip({
         aria-label={`Remove ${name} from chat context`}
         onClick={() => onRemove(doc.id)}
       >
-        ×
+        <X size={13} strokeWidth={2} aria-hidden />
       </button>
     </div>
   );
@@ -213,7 +202,7 @@ function MoreRow({
         aria-label={`Remove ${name} from chat context`}
         onClick={() => onRemove(doc.id)}
       >
-        ×
+        <X size={13} strokeWidth={2} aria-hidden />
       </button>
     </div>
   );
@@ -275,11 +264,7 @@ function ContextBar({
           docs.length === 0 ? "No brochures in this chat" : "Brochures in this chat"
         }
       >
-        <svg {...iconSvgProps}>
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <path d="M14 2v6h6" />
-          <path d="M9 15h6" />
-        </svg>
+        <FileText size={15} strokeWidth={1.8} aria-hidden />
       </span>
       <div
         className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto mask-fade-r"
@@ -408,9 +393,7 @@ export function ChatPanel({
             aria-label="Add a brochure to the chat context"
             onClick={onOpenLibrary}
           >
-            <svg {...iconSvgProps}>
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <Plus size={15} strokeWidth={1.8} aria-hidden />
           </button>
           <input
             className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[14.5px] py-[9px] px-1 max-phone:text-base disabled:cursor-not-allowed"

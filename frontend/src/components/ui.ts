@@ -15,25 +15,12 @@ export const toolBtn =
   "relative flex items-center gap-2 border border-line-4 rounded-[10px] text-[13px] text-text-toolbtn bg-surface-1 cursor-pointer [&_svg]:block";
 export const toolBtnHover = "hover:border-accent hover:text-text-hi";
 
-/** Props for the 24x24 stroke icons used inside `toolBtn`. */
-export const iconSvgProps = {
-  width: 15,
-  height: 15,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 1.8,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-  "aria-hidden": true,
-};
-
 export const eyebrow =
   "font-mono text-[9.5px] tracking-[0.12em] text-text-muted px-[3px] pb-2";
 
 /** Small square icon-only close button used in every modal / the files sheet. */
 export const dialogCloseBase =
-  "flex-none border border-line-4 bg-surface-6 text-text-faint leading-none cursor-pointer hover:border-line-hover hover:text-text";
+  "flex-none grid place-items-center border border-line-4 bg-surface-6 text-text-faint leading-none cursor-pointer hover:border-line-hover hover:text-text";
 
 export const modalEmpty = "px-1 py-[26px] text-center text-[13.5px] text-text-ghost";
 

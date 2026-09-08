@@ -1,4 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  LogOut,
+  MoreHorizontal,
+  PanelLeftClose,
+  Plus,
+  Search,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import type { Chat } from "../types.ts";
 import { ACCOUNT } from "../data.ts";
 
@@ -15,7 +24,7 @@ interface SidebarProps {
 }
 
 const iconBtn =
-  "flex-none w-[26px] h-[26px] rounded-[7px] border border-line-3 bg-transparent text-text-faint text-[13px] leading-none cursor-pointer hover:text-text hover:border-line-hover";
+  "flex-none grid place-items-center w-[26px] h-[26px] rounded-[7px] border border-line-3 bg-transparent text-text-faint text-[13px] leading-none cursor-pointer hover:text-text hover:border-line-hover";
 
 const menuItem =
   "flex items-center gap-[9px] w-full text-left px-2.5 py-2 rounded-[9px] bg-transparent text-text-nav text-[12.5px] cursor-pointer hover:bg-surface-4 hover:text-text";
@@ -62,7 +71,7 @@ function ChatRow({
           onToggleMenu();
         }}
       >
-        ⋯
+        <MoreHorizontal size={15} strokeWidth={1.9} aria-hidden />
       </button>
 
       {menuOpen && (
@@ -78,22 +87,7 @@ function ChatRow({
               onRequestDelete();
             }}
           >
-            <svg
-              width={13}
-              height={13}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.9}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M3 6h18" />
-              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              <path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
-              <path d="M10 11v6M14 11v6" />
-            </svg>
+            <Trash2 size={13} strokeWidth={1.9} aria-hidden />
             <span>Delete chat</span>
           </button>
         </div>
@@ -145,7 +139,7 @@ export function Sidebar({
           Ask My Brochures
         </div>
         <button className={iconBtn} title="Hide menu" onClick={onCollapse}>
-          ‹
+          <PanelLeftClose size={15} strokeWidth={1.8} aria-hidden />
         </button>
       </div>
 
@@ -154,14 +148,19 @@ export function Sidebar({
           className="flex items-center gap-[9px] px-[11px] py-[9px] rounded-[10px] bg-accent text-accent-ink text-[13px] font-semibold cursor-pointer hover:bg-accent-bright"
           onClick={onNewChat}
         >
-          <span className="font-mono text-[13px]">+</span>
+          <Plus size={15} strokeWidth={2} aria-hidden />
           <span>New chat</span>
         </button>
         <button
           className="flex items-center gap-[9px] px-[11px] py-[9px] border border-line-3 rounded-[10px] bg-transparent text-text-dim text-[13px] cursor-pointer hover:border-line-hover hover:text-text"
           onClick={onOpenChatSearch}
         >
-          <span className="font-mono text-[12px] text-accent-text">⌕</span>
+          <Search
+            size={14}
+            strokeWidth={1.8}
+            className="text-accent-text"
+            aria-hidden
+          />
           <span>Search chats</span>
         </button>
       </div>
@@ -200,11 +199,11 @@ export function Sidebar({
         </div>
         <div className="flex flex-col gap-[3px]">
           <button className={menuItem} onClick={onOpenSettings}>
-            <span className="font-mono text-[11px]">⚙</span>
+            <Settings size={14} strokeWidth={1.7} aria-hidden />
             <span>Settings</span>
           </button>
           <button className={menuItem}>
-            <span className="font-mono text-[11px]">⇥</span>
+            <LogOut size={14} strokeWidth={1.7} aria-hidden />
             <span>Log out</span>
           </button>
         </div>

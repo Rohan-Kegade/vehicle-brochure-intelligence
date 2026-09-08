@@ -1,3 +1,4 @@
+import { Check, Search, Upload, X } from "lucide-react";
 import type { Doc } from "../types.ts";
 import {
   dialog,
@@ -11,19 +12,6 @@ import {
   track,
   trackFill,
 } from "./ui.ts";
-
-/** Props for the tiny checkmark drawn in a selected row's checkbox. */
-const checkIcon = {
-  width: 12,
-  height: 12,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-  "aria-hidden": true,
-};
 
 interface LibraryModalProps {
   query: string;
@@ -84,9 +72,7 @@ export function LibraryModal({
               : "border-line-4 bg-surface-6 text-transparent"
           }`}
         >
-          <svg {...checkIcon}>
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
+          <Check size={12} strokeWidth={2.4} aria-hidden />
         </span>
       </button>
     );
@@ -114,12 +100,17 @@ export function LibraryModal({
               aria-label="Close"
               onClick={onClose}
             >
-              ×
+              <X size={15} strokeWidth={2} aria-hidden />
             </button>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0 flex items-center gap-[9px] border border-line-input rounded-[11px] bg-surface-1 px-[13px] focus-within:border-line-input-focus">
-              <span className="font-mono text-[12px] text-text-ghost">⌕</span>
+              <Search
+                size={14}
+                strokeWidth={1.8}
+                className="flex-none text-text-ghost"
+                aria-hidden
+              />
               <input
                 className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[14px] py-[11px] max-phone:text-base"
                 value={query}
@@ -135,21 +126,7 @@ export function LibraryModal({
               onClick={onUpload}
               disabled={indexing}
             >
-              <svg
-                width={14}
-                height={14}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.9}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M12 15V3" />
-                <path d="m7 8 5-5 5 5" />
-                <path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
-              </svg>
+              <Upload size={14} strokeWidth={1.9} aria-hidden />
             </button>
           </div>
 

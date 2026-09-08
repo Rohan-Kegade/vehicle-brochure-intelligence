@@ -1,4 +1,19 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  Check as CheckIcon,
+  Database,
+  Minus,
+  MoreVertical,
+  Palette,
+  Pencil,
+  Search,
+  ShieldCheck,
+  Trash2,
+  Upload,
+  User,
+  X,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { Theme } from "../lib/useTheme.ts";
 import type { Doc } from "../types.ts";
 import { ACCOUNT } from "../data.ts";
@@ -37,30 +52,30 @@ interface SettingsModalProps {
 
 type Section = "profile" | "appearance" | "data" | "account";
 
-const SECTIONS: { id: Section; label: string; icon: string; blurb: string }[] =
+const SECTIONS: { id: Section; label: string; icon: LucideIcon; blurb: string }[] =
   [
     {
       id: "profile",
       label: "Profile",
-      icon: "☺",
+      icon: User,
       blurb: "Your name and how you appear",
     },
     {
       id: "appearance",
       label: "Appearance",
-      icon: "◑",
+      icon: Palette,
       blurb: "Theme and display",
     },
     {
       id: "data",
       label: "Manage brochures",
-      icon: "⛁",
+      icon: Database,
       blurb: "Your uploaded brochures",
     },
     {
       id: "account",
       label: "Account",
-      icon: "⛊",
+      icon: ShieldCheck,
       blurb: "Plan, sign-in and data",
     },
   ];
@@ -256,7 +271,12 @@ function Appearance({
                     {o.label}
                   </span>
                   {on && (
-                    <span className="text-accent-text-soft text-[11px]">✓</span>
+                    <CheckIcon
+                      size={13}
+                      strokeWidth={2.4}
+                      className="text-accent-text-soft"
+                      aria-hidden
+                    />
                   )}
                 </span>
                 <span className="font-mono text-[9.5px] text-text-ghost tracking-[0.04em]">
@@ -316,32 +336,15 @@ function Account({ onClose }: { onClose: () => void }) {
 const rowBtn =
   "flex-none px-2.5 py-[7px] rounded-[8px] border border-line-4 bg-surface-6 text-[12px] text-text-dim cursor-pointer";
 
-const miniIcon = {
-  width: 13,
-  height: 13,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 1.9,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-  "aria-hidden": true,
-};
-
 /** Trash glyph — shared by the row delete button and the bulk action. */
-const TrashIcon = () => (
-  <svg {...miniIcon}>
-    <path d="M3 6h18" />
-    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    <path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
-  </svg>
-);
+const TrashIcon = () => <Trash2 size={13} strokeWidth={1.9} aria-hidden />;
 
 /** A checkbox box that fills in when selected. `mixed` renders a dash for a
  * partial (some-but-not-all) selection. On hover (of the enclosing button) an
  * empty box previews a faint check and warms its border. */
 function Check({ on, mixed = false }: { on: boolean; mixed?: boolean }) {
   const filled = on || mixed;
+  const Glyph = mixed ? Minus : CheckIcon;
   return (
     <span
       className={`grid place-items-center w-[19px] h-[19px] rounded-[6px] border transition-[background-color,border-color,color] duration-[140ms] ${
@@ -350,22 +353,14 @@ function Check({ on, mixed = false }: { on: boolean; mixed?: boolean }) {
           : "border-line-4 bg-surface-6 text-text-ghost group-hover:border-accent group-hover:bg-surface-4"
       }`}
     >
-      <svg
-        width={12}
-        height={12}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
+      <Glyph
+        size={12}
         strokeWidth={3}
-        strokeLinecap="round"
-        strokeLinejoin="round"
         aria-hidden
         className={`transition-opacity duration-[120ms] ${
           filled ? "opacity-100" : "opacity-0 group-hover:opacity-40"
         }`}
-      >
-        {mixed ? <path d="M6 12h12" /> : <path d="M20 6 9 17l-5-5" />}
-      </svg>
+      />
     </span>
   );
 }
@@ -505,7 +500,12 @@ function ManageData({
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0 flex items-center gap-[9px] border border-line-input rounded-[11px] bg-surface-1 px-[13px] focus-within:border-line-input-focus">
-            <span className="font-mono text-[12px] text-text-ghost">⌕</span>
+            <Search
+              size={14}
+              strokeWidth={1.8}
+              className="flex-none text-text-ghost"
+              aria-hidden
+            />
             <input
               className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[13.5px] py-[10px] max-phone:text-base"
               value={q}
@@ -527,21 +527,7 @@ function ManageData({
             onClick={onUpload}
             disabled={indexing || atLimit}
           >
-            <svg
-              width={14}
-              height={14}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.9}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M12 15V3" />
-              <path d="m7 8 5-5 5 5" />
-              <path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
-            </svg>
+            <Upload size={14} strokeWidth={1.9} aria-hidden />
           </button>
         </div>
 
@@ -683,7 +669,11 @@ function ManageData({
                               setMenuId((cur) => (cur === d.id ? null : d.id))
                             }
                           >
-                            ⋮
+                            <MoreVertical
+                              size={15}
+                              strokeWidth={1.9}
+                              aria-hidden
+                            />
                           </button>
                           {menuId === d.id && (
                             <div
@@ -696,10 +686,7 @@ function ManageData({
                                 className="flex items-center gap-2 w-full text-left px-2.5 py-2 rounded-[7px] text-[12.5px] text-text-nav cursor-pointer hover:bg-surface-4 hover:text-text"
                                 onClick={() => startEdit(d)}
                               >
-                                <svg {...miniIcon}>
-                                  <path d="M12 20h9" />
-                                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                                </svg>
+                                <Pencil size={13} strokeWidth={1.9} aria-hidden />
                                 <span>Rename</span>
                               </button>
                               <button
@@ -784,7 +771,7 @@ export function SettingsModal({
             onClick={onClose}
             aria-label="Close settings"
           >
-            ×
+            <X size={15} strokeWidth={2} aria-hidden />
           </button>
         </div>
 
@@ -792,6 +779,7 @@ export function SettingsModal({
           <nav className="flex-none w-[200px] flex flex-col gap-[3px] p-2.5 border-r border-line overflow-y-auto max-phone:w-full max-phone:flex-row max-phone:overflow-x-auto max-phone:border-r-0 max-phone:border-b">
             {SECTIONS.map((s) => {
               const on = s.id === section;
+              const Icon = s.icon;
               return (
                 <button
                   key={s.id}
@@ -803,9 +791,12 @@ export function SettingsModal({
                   }`}
                   onClick={() => setSection(s.id)}
                 >
-                  <span className="font-mono text-[12px] text-accent-text">
-                    {s.icon}
-                  </span>
+                  <Icon
+                    size={15}
+                    strokeWidth={1.7}
+                    className="flex-none text-accent-text"
+                    aria-hidden
+                  />
                   <span>{s.label}</span>
                 </button>
               );

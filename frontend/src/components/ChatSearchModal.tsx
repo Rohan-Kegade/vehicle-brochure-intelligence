@@ -1,3 +1,4 @@
+import { Search, X } from "lucide-react";
 import type { Chat } from "../types.ts";
 import { dialog, dialogCloseBase, modalEmpty, overlay } from "./ui.ts";
 
@@ -24,7 +25,12 @@ export function ChatSearchModal({ query, results, onQuery, onPick, onClose }: Ch
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-none flex items-center gap-2.5 px-3.5 py-1 border-b border-line">
-          <span className="font-mono text-[13px] text-text-ghost">⌕</span>
+          <Search
+            size={15}
+            strokeWidth={1.8}
+            className="flex-none text-text-ghost"
+            aria-hidden
+          />
           <input
             className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[15px] py-[15px] max-phone:text-base"
             autoFocus
@@ -35,8 +41,9 @@ export function ChatSearchModal({ query, results, onQuery, onPick, onClose }: Ch
           <button
             className={`${dialogCloseBase} w-7 h-7 rounded-[8px] text-[14px]`}
             onClick={onClose}
+            aria-label="Close"
           >
-            ×
+            <X size={14} strokeWidth={2} aria-hidden />
           </button>
         </div>
         <div className="flex-1 min-h-[100px] overflow-y-auto p-2.5">
