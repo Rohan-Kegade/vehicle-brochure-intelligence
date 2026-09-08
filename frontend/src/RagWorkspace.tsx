@@ -9,7 +9,12 @@ import { ChatSearchModal } from "./components/ChatSearchModal.tsx";
 import { LibraryModal } from "./components/LibraryModal.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
 import { ConfirmModal } from "./components/ConfirmModal.tsx";
-import { iconSvgProps as svgProps, onlyMobile, toolBtn, toolBtnHover } from "./components/ui.ts";
+import {
+  iconSvgProps as svgProps,
+  onlyMobile,
+  toolBtn,
+  toolBtnHover,
+} from "./components/ui.ts";
 
 const scrim =
   "hidden fixed inset-0 border-0 bg-overlay cursor-pointer max-phone:block max-phone:opacity-0 max-phone:pointer-events-none max-phone:transition-opacity max-phone:duration-200";
@@ -33,7 +38,8 @@ export function RagWorkspace(props: RagWorkspaceProps) {
     cancelDeleteChat,
   } = w;
   useEffect(() => {
-    if (!chatSearchOpen && !settingsOpen && !libOpen && !pendingDeleteChat) return;
+    if (!chatSearchOpen && !settingsOpen && !libOpen && !pendingDeleteChat)
+      return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (pendingDeleteChat) cancelDeleteChat();
@@ -139,7 +145,10 @@ export function RagWorkspace(props: RagWorkspaceProps) {
               aria-label="Share chat"
               onClick={w.shareChat}
             >
-              <svg className={w.shareCopied ? "text-accent" : "text-accent-text"} {...svgProps}>
+              <svg
+                className={w.shareCopied ? "text-accent" : "text-accent-text"}
+                {...svgProps}
+              >
                 <circle cx="18" cy="5" r="3" />
                 <circle cx="6" cy="12" r="3" />
                 <circle cx="18" cy="19" r="3" />
@@ -186,11 +195,11 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           uploadCount={w.uploadCount}
           shown={w.libraryShown}
           selectedCount={w.activeCount}
-          indexing={w.indexing}
+          indexing={w.indexing && w.uploadOrigin === "library"}
           indexName={w.indexName}
           indexStage={w.indexStage}
           indexPct={w.indexPct}
-          onUpload={w.upload}
+          onUpload={() => w.upload("library")}
           onQuery={w.setQuery}
           onToggleAdd={w.toggleAdd}
           onClose={w.closeLib}
@@ -198,7 +207,20 @@ export function RagWorkspace(props: RagWorkspaceProps) {
       )}
 
       {w.settingsOpen && (
-        <SettingsModal theme={theme} onTheme={setTheme} onClose={w.closeSettings} />
+        <SettingsModal
+          theme={theme}
+          onTheme={setTheme}
+          uploads={w.uploads}
+          onRenameDoc={w.renameDoc}
+          onDeleteDoc={w.deleteDoc}
+          onUpload={() => w.upload("settings")}
+          indexing={w.indexing && w.uploadOrigin === "settings"}
+          indexName={w.indexName}
+          indexStage={w.indexStage}
+          indexPct={w.indexPct}
+          uploadLimit={w.uploadLimit}
+          onClose={w.closeSettings}
+        />
       )}
 
       {w.pendingDeleteChat && (

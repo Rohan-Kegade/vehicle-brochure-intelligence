@@ -1,27 +1,76 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Theme } from "../lib/useTheme.ts";
+import type { Doc } from "../types.ts";
 import { ACCOUNT } from "../data.ts";
-import { dialog, dialogCloseBase, eyebrow, overlay } from "./ui.ts";
+import {
+  dialog,
+  dialogCloseBase,
+  eyebrow,
+  indexCard,
+  indexName as indexNameCls,
+  indexRow,
+  indexStage as indexStageCls,
+  modalEmpty,
+  overlay,
+  track,
+  trackFill,
+} from "./ui.ts";
+import { ConfirmModal } from "./ConfirmModal.tsx";
 
 interface SettingsModalProps {
   theme: Theme;
   onTheme: (t: Theme) => void;
+  /** The user's uploaded brochures, for the Manage brochures section. */
+  uploads: Doc[];
+  onRenameDoc: (id: string, title: string) => void;
+  onDeleteDoc: (id: string) => void;
+  /** Upload a new brochure + the live indexing state, for the Manage brochures section. */
+  onUpload: () => void;
+  indexing: boolean;
+  indexName: string;
+  indexStage: string;
+  indexPct: number;
+  /** Upload cap for the library. */
+  uploadLimit: number;
   onClose: () => void;
 }
 
-type Section = "profile" | "appearance" | "account";
+type Section = "profile" | "appearance" | "data" | "account";
 
-const SECTIONS: { id: Section; label: string; icon: string; blurb: string }[] = [
-  { id: "profile", label: "Profile", icon: "◐", blurb: "Your name and how you appear" },
-  { id: "appearance", label: "Appearance", icon: "◑", blurb: "Theme and display" },
-  { id: "account", label: "Account", icon: "⛊", blurb: "Plan, sign-in and data" },
-];
+const SECTIONS: { id: Section; label: string; icon: string; blurb: string }[] =
+  [
+    {
+      id: "profile",
+      label: "Profile",
+      icon: "☺",
+      blurb: "Your name and how you appear",
+    },
+    {
+      id: "appearance",
+      label: "Appearance",
+      icon: "◑",
+      blurb: "Theme and display",
+    },
+    {
+      id: "data",
+      label: "Manage brochures",
+      icon: "⛁",
+      blurb: "Your uploaded brochures",
+    },
+    {
+      id: "account",
+      label: "Account",
+      icon: "⛊",
+      blurb: "Plan, sign-in and data",
+    },
+  ];
 
 const field =
   "w-full bg-surface-1 border border-line-input rounded-[10px] px-[13px] py-[10px] text-[13.5px] text-text outline-none focus:border-line-input-focus";
 const fieldLabel = "block text-[11px] font-medium text-text-faint mb-1.5";
 const sectionTitle = "text-[14px] font-semibold text-text";
-const sectionNote = "font-mono text-[10px] text-text-ghost tracking-[0.06em] mt-1";
+const sectionNote =
+  "font-mono text-[10px] text-text-ghost tracking-[0.06em] mt-1";
 
 function Profile() {
   const [name, setName] = useState<string>(ACCOUNT.name);
@@ -45,7 +94,9 @@ function Profile() {
     <div className="flex flex-col gap-5">
       <div>
         <div className={sectionTitle}>Profile</div>
-        <div className={sectionNote}>This is how you show up across the workspace</div>
+        <div className={sectionNote}>
+          This is how you show up across the workspace
+        </div>
       </div>
 
       <div className="flex items-center gap-3.5">
@@ -62,7 +113,11 @@ function Profile() {
 
       <label>
         <span className={fieldLabel}>Full name</span>
-        <input className={field} value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          className={field}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
       </label>
 
       <label>
@@ -86,7 +141,9 @@ function Profile() {
           </button>
         ) : (
           <div className="flex flex-col gap-3.5">
-            <div className="text-[12.5px] font-medium text-text">Change password</div>
+            <div className="text-[12.5px] font-medium text-text">
+              Change password
+            </div>
 
             <label>
               <span className={fieldLabel}>Current password</span>
@@ -153,7 +210,13 @@ function Profile() {
   );
 }
 
-function Appearance({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => void }) {
+function Appearance({
+  theme,
+  onTheme,
+}: {
+  theme: Theme;
+  onTheme: (t: Theme) => void;
+}) {
   const options: { id: Theme; label: string; hint: string }[] = [
     { id: "light", label: "Light", hint: "Bright surfaces" },
     { id: "dark", label: "Dark", hint: "Dim surfaces" },
@@ -189,8 +252,12 @@ function Appearance({ theme, onTheme }: { theme: Theme; onTheme: (t: Theme) => v
                   }`}
                 />
                 <span className="flex items-center gap-1.5">
-                  <span className="text-[12.5px] font-medium text-text">{o.label}</span>
-                  {on && <span className="text-accent-text-soft text-[11px]">✓</span>}
+                  <span className="text-[12.5px] font-medium text-text">
+                    {o.label}
+                  </span>
+                  {on && (
+                    <span className="text-accent-text-soft text-[11px]">✓</span>
+                  )}
                 </span>
                 <span className="font-mono text-[9.5px] text-text-ghost tracking-[0.04em]">
                   {o.hint}
@@ -246,9 +313,456 @@ function Account({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Account settings — a left nav (Profile / Appearance / Account) beside the
- * matching panel. Mock: nothing here is persisted except the theme. */
-export function SettingsModal({ theme, onTheme, onClose }: SettingsModalProps) {
+const rowBtn =
+  "flex-none px-2.5 py-[7px] rounded-[8px] border border-line-4 bg-surface-6 text-[12px] text-text-dim cursor-pointer";
+
+const miniIcon = {
+  width: 13,
+  height: 13,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.9,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+/** Trash glyph — shared by the row delete button and the bulk action. */
+const TrashIcon = () => (
+  <svg {...miniIcon}>
+    <path d="M3 6h18" />
+    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
+  </svg>
+);
+
+/** A checkbox box that fills in when selected. `mixed` renders a dash for a
+ * partial (some-but-not-all) selection. On hover (of the enclosing button) an
+ * empty box previews a faint check and warms its border. */
+function Check({ on, mixed = false }: { on: boolean; mixed?: boolean }) {
+  const filled = on || mixed;
+  return (
+    <span
+      className={`grid place-items-center w-[19px] h-[19px] rounded-[6px] border transition-[background-color,border-color,color] duration-[140ms] ${
+        filled
+          ? "border-accent-line bg-accent text-accent-ink"
+          : "border-line-4 bg-surface-6 text-text-ghost group-hover:border-accent group-hover:bg-surface-4"
+      }`}
+    >
+      <svg
+        width={12}
+        height={12}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+        className={`transition-opacity duration-[120ms] ${
+          filled ? "opacity-100" : "opacity-0 group-hover:opacity-40"
+        }`}
+      >
+        {mixed ? <path d="M6 12h12" /> : <path d="M20 6 9 17l-5-5" />}
+      </svg>
+    </span>
+  );
+}
+
+/** Manage brochures — list every uploaded brochure with multi-select delete and
+ * a per-row menu for rename and delete. Deletes go through a confirmation modal. */
+function ManageData({
+  uploads,
+  onRename,
+  onDelete,
+  onUpload,
+  indexing,
+  indexNm,
+  indexStg,
+  indexPct,
+  limit,
+}: {
+  uploads: Doc[];
+  onRename: (id: string, title: string) => void;
+  onDelete: (id: string) => void;
+  onUpload: () => void;
+  indexing: boolean;
+  indexNm: string;
+  indexStg: string;
+  indexPct: number;
+  limit: number;
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [editId, setEditId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [confirmIds, setConfirmIds] = useState<string[] | null>(null);
+  const [q, setQ] = useState("");
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  const atLimit = uploads.length >= limit;
+
+  const needle = q.trim().toLowerCase();
+  const shown = needle
+    ? uploads.filter((d) =>
+        [d.title, d.make, d.tag]
+          .filter(Boolean)
+          .some((s) => s!.toLowerCase().includes(needle)),
+      )
+    : uploads;
+
+  // Drop selection entries for brochures that no longer exist (post-delete).
+  useEffect(() => {
+    setSelected((cur) => {
+      const live = new Set(uploads.map((d) => d.id));
+      const next = new Set([...cur].filter((id) => live.has(id)));
+      return next.size === cur.size ? cur : next;
+    });
+  }, [uploads]);
+
+  // Row menu: dismiss on outside click / Esc.
+  useEffect(() => {
+    if (!menuId) return;
+    const onDown = (e: MouseEvent) => {
+      if (listRef.current && !listRef.current.contains(e.target as Node))
+        setMenuId(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuId(null);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuId]);
+
+  // While the confirm modal is up, swallow Esc so it doesn't also close Settings.
+  useEffect(() => {
+    if (!confirmIds) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopImmediatePropagation();
+        setConfirmIds(null);
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [confirmIds]);
+
+  const toggleSel = (id: string) =>
+    setSelected((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const allSelected =
+    shown.length > 0 && shown.every((d) => selected.has(d.id));
+  const toggleAll = () =>
+    setSelected((cur) => {
+      const next = new Set(cur);
+      if (allSelected) shown.forEach((d) => next.delete(d.id));
+      else shown.forEach((d) => next.add(d.id));
+      return next;
+    });
+
+  const startEdit = (d: Doc) => {
+    setMenuId(null);
+    setDraft(d.title);
+    setEditId(d.id);
+  };
+  const commit = () => {
+    if (editId && draft.trim()) onRename(editId, draft);
+    setEditId(null);
+  };
+
+  const runDelete = () => {
+    confirmIds?.forEach((id) => onDelete(id));
+    setConfirmIds(null);
+    setSelected(new Set());
+  };
+
+  const bulk = (confirmIds?.length ?? 0) > 1;
+  const firstTitle =
+    confirmIds && !bulk
+      ? (uploads.find((d) => d.id === confirmIds[0])?.title ?? "This brochure")
+      : "";
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <div className={sectionTitle}>Manage brochures</div>
+        <div className={sectionNote}>
+          {uploads.length} of {limit} brochures uploaded
+          {atLimit && " · limit reached"}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0 flex items-center gap-[9px] border border-line-input rounded-[11px] bg-surface-1 px-[13px] focus-within:border-line-input-focus">
+            <span className="font-mono text-[12px] text-text-ghost">⌕</span>
+            <input
+              className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[13.5px] py-[10px] max-phone:text-base"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by name, brand or type…"
+            />
+          </div>
+          <button
+            type="button"
+            className="flex-none grid place-items-center w-[40px] h-[40px] rounded-[10px] border border-line-input bg-surface-1 text-accent-text cursor-pointer transition-colors duration-[160ms] enabled:hover:border-accent enabled:hover:text-text-hi disabled:opacity-60 disabled:cursor-default"
+            title={
+              atLimit
+                ? `Upload limit reached (${limit})`
+                : indexing
+                  ? "Indexing…"
+                  : "Upload a PDF"
+            }
+            aria-label="Upload a PDF"
+            onClick={onUpload}
+            disabled={indexing || atLimit}
+          >
+            <svg
+              width={14}
+              height={14}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.9}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M12 15V3" />
+              <path d="m7 8 5-5 5 5" />
+              <path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+            </svg>
+          </button>
+        </div>
+
+        {indexing && (
+          <div className={indexCard}>
+            <div className={indexRow}>
+              <span className={indexNameCls}>{indexNm}</span>
+              <span className={indexStageCls}>{indexStg}</span>
+            </div>
+            <div className={`${track} h-[3px] mt-2`}>
+              <div
+                className={`${trackFill} bg-amber duration-500`}
+                style={{ width: `${indexPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {atLimit && !indexing && (
+          <div className="px-3 py-2 rounded-[9px] border border-line-3 bg-surface-3 font-mono text-[10px] text-text-ghost tracking-[0.04em]">
+            You've reached the {limit}-brochure limit — delete one to upload
+            another.
+          </div>
+        )}
+
+        {uploads.length === 0 ? (
+          <div className="px-3.5 py-6 text-center text-[13px] text-text-ghost border border-dashed border-line-3 rounded-[12px]">
+            You haven't uploaded any brochures yet.
+          </div>
+        ) : shown.length === 0 ? (
+          <div className={modalEmpty}>No brochures match your search.</div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-3 px-1 min-h-[28px]">
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={
+                  allSelected ? true : selected.size > 0 ? "mixed" : false
+                }
+                className="group flex items-center gap-2 font-mono text-[10.5px] text-accent-text-soft tracking-[0.06em] cursor-pointer hover:text-text"
+                onClick={toggleAll}
+              >
+                <Check
+                  on={allSelected}
+                  mixed={!allSelected && selected.size > 0}
+                />
+                <span>
+                  {selected.size > 0
+                    ? `${selected.size} selected · ${allSelected ? "clear" : "select all"}`
+                    : "select all"}
+                </span>
+              </button>
+              {selected.size > 0 && (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-[6px] rounded-[8px] border border-danger bg-surface-6 text-[12px] text-danger cursor-pointer hover:bg-danger/10"
+                  onClick={() => setConfirmIds([...selected])}
+                >
+                  <TrashIcon />
+                  <span>Delete</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2" ref={listRef}>
+              {shown.map((d) => {
+                const isSel = selected.has(d.id);
+                const editing = editId === d.id;
+                return (
+                  <div
+                    key={d.id}
+                    className={`flex items-center gap-3 w-full px-3.5 py-[13px] border rounded-[12px] transition-colors duration-[140ms] ${
+                      isSel
+                        ? "border-accent-line bg-accent-tint-2"
+                        : "border-line-card bg-surface-3 hover:border-line-4"
+                    }`}
+                  >
+                    {editing ? (
+                      <>
+                        <input
+                          autoFocus
+                          className={`${field} flex-1 min-w-0`}
+                          value={draft}
+                          onChange={(e) => setDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commit();
+                            if (e.key === "Escape") setEditId(null);
+                          }}
+                        />
+                        <button
+                          className={`${rowBtn} hover:border-accent hover:text-text`}
+                          type="button"
+                          onClick={() => setEditId(null)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="flex-none px-2.5 py-[7px] rounded-[8px] bg-accent text-accent-ink text-[12px] font-semibold cursor-pointer hover:bg-accent-bright"
+                          type="button"
+                          onClick={commit}
+                        >
+                          Save
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={isSel}
+                          aria-label={
+                            isSel ? `Deselect ${d.title}` : `Select ${d.title}`
+                          }
+                          className="group flex flex-1 min-w-0 items-center gap-3 text-left cursor-pointer"
+                          onClick={() => toggleSel(d.id)}
+                        >
+                          <Check on={isSel} />
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-[13.5px] text-text-soft truncate">
+                              {d.title}
+                            </span>
+                            <span className="block font-mono text-[10px] text-text-ghost mt-[5px] tracking-[0.04em]">
+                              {[d.make, d.tag, `${d.pages} pages`]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          </span>
+                        </button>
+
+                        <div className="flex-none relative">
+                          <button
+                            type="button"
+                            className="grid place-items-center w-7 h-7 rounded-[7px] text-text-faint text-[13px] leading-none cursor-pointer hover:bg-surface-6 hover:text-text"
+                            title="More"
+                            aria-haspopup="menu"
+                            aria-expanded={menuId === d.id}
+                            onClick={() =>
+                              setMenuId((cur) => (cur === d.id ? null : d.id))
+                            }
+                          >
+                            ⋮
+                          </button>
+                          {menuId === d.id && (
+                            <div
+                              role="menu"
+                              className="absolute right-0 top-[calc(100%+4px)] z-10 w-[144px] rounded-[10px] border border-line-3 bg-surface-2 shadow-dialog p-1 animate-fadein"
+                            >
+                              <button
+                                role="menuitem"
+                                type="button"
+                                className="flex items-center gap-2 w-full text-left px-2.5 py-2 rounded-[7px] text-[12.5px] text-text-nav cursor-pointer hover:bg-surface-4 hover:text-text"
+                                onClick={() => startEdit(d)}
+                              >
+                                <svg {...miniIcon}>
+                                  <path d="M12 20h9" />
+                                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                </svg>
+                                <span>Rename</span>
+                              </button>
+                              <button
+                                role="menuitem"
+                                type="button"
+                                className="flex items-center gap-2 w-full text-left px-2.5 py-2 rounded-[7px] text-[12.5px] text-danger cursor-pointer hover:bg-surface-4"
+                                onClick={() => {
+                                  setMenuId(null);
+                                  setConfirmIds([d.id]);
+                                }}
+                              >
+                                <TrashIcon />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {confirmIds && (
+        <ConfirmModal
+          title={
+            bulk ? `Delete ${confirmIds.length} brochures?` : "Delete brochure?"
+          }
+          message={
+            bulk
+              ? `${confirmIds.length} brochures will be permanently removed, including from any chat's context. This can't be undone.`
+              : `“${firstTitle}” will be permanently removed, including from any chat's context. This can't be undone.`
+          }
+          confirmLabel={bulk ? `Delete ${confirmIds.length}` : "Delete"}
+          destructive
+          onConfirm={runDelete}
+          onClose={() => setConfirmIds(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Account settings — a left nav (Profile / Appearance / Manage brochures / Account)
+ * beside the matching panel. Mock: nothing here is persisted except the theme. */
+export function SettingsModal({
+  theme,
+  onTheme,
+  uploads,
+  onRenameDoc,
+  onDeleteDoc,
+  onUpload,
+  indexing,
+  indexName,
+  indexStage,
+  indexPct,
+  uploadLimit,
+  onClose,
+}: SettingsModalProps) {
   const [section, setSection] = useState<Section>("profile");
 
   return (
@@ -257,7 +771,7 @@ export function SettingsModal({ theme, onTheme, onClose }: SettingsModalProps) {
       onClick={onClose}
     >
       <div
-        className={`${dialog} w-[min(720px,100%)] h-[min(520px,84dvh)]`}
+        className={`${dialog} w-[min(820px,100%)] h-[min(600px,88dvh)]`}
         role="dialog"
         aria-modal="true"
         aria-label="Settings"
@@ -289,7 +803,9 @@ export function SettingsModal({ theme, onTheme, onClose }: SettingsModalProps) {
                   }`}
                   onClick={() => setSection(s.id)}
                 >
-                  <span className="font-mono text-[12px] text-accent-text">{s.icon}</span>
+                  <span className="font-mono text-[12px] text-accent-text">
+                    {s.icon}
+                  </span>
                   <span>{s.label}</span>
                 </button>
               );
@@ -298,7 +814,22 @@ export function SettingsModal({ theme, onTheme, onClose }: SettingsModalProps) {
 
           <div className="flex-1 min-w-0 overflow-y-auto p-[22px] max-phone:p-4">
             {section === "profile" && <Profile />}
-            {section === "appearance" && <Appearance theme={theme} onTheme={onTheme} />}
+            {section === "appearance" && (
+              <Appearance theme={theme} onTheme={onTheme} />
+            )}
+            {section === "data" && (
+              <ManageData
+                uploads={uploads}
+                onRename={onRenameDoc}
+                onDelete={onDeleteDoc}
+                onUpload={onUpload}
+                indexing={indexing}
+                indexNm={indexName}
+                indexStg={indexStage}
+                indexPct={indexPct}
+                limit={uploadLimit}
+              />
+            )}
             {section === "account" && <Account onClose={onClose} />}
           </div>
         </div>

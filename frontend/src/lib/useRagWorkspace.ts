@@ -1,6 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Chat, Doc, Message, RagWorkspaceProps, RetrievalMode } from "../types.ts";
-import { INDEX_STAGES, INITIAL_CHATS, INITIAL_DOCS, MAX_CONTEXT, UPLOAD_NAMES } from "../data.ts";
+import type {
+  Chat,
+  Doc,
+  Message,
+  RagWorkspaceProps,
+  RetrievalMode,
+} from "../types.ts";
+import {
+  INDEX_STAGES,
+  INITIAL_CHATS,
+  INITIAL_DOCS,
+  MAX_CONTEXT,
+  MAX_UPLOADS,
+  UPLOAD_NAMES,
+} from "../data.ts";
 import { composeAnswer } from "./answers.ts";
 import {
   type DocStatus,
@@ -15,6 +28,10 @@ import {
 
 const DEFAULT_LATENCY = 1100;
 const MOBILE_QUERY = "(max-width: 720px)";
+
+/** Which surface kicked off the current upload — scopes the progress banner and
+ * decides whether the new brochure joins the chat context. */
+export type UploadOrigin = "library" | "settings";
 
 const matchesMobile = () =>
   typeof window !== "undefined" && !!window.matchMedia?.(MOBILE_QUERY).matches;
@@ -62,13 +79,22 @@ export interface RagWorkspaceModel {
   activeCount: number;
   toggleAdd: (id: string) => void;
   toggleOn: (id: string) => void;
+  /** Rename an uploaded brochure (Manage brochures). */
+  renameDoc: (id: string, title: string) => void;
+  /** Delete an uploaded brochure for good (Manage brochures). */
+  deleteDoc: (id: string) => void;
 
   // indexing
   indexing: boolean;
   indexName: string;
   indexStage: string;
   indexPct: number;
-  upload: () => void;
+  /** Which surface started the in-flight upload (null when idle) — lets each
+   * surface show the progress banner only for its own upload. */
+  uploadOrigin: UploadOrigin | null;
+  /** Start an upload. `origin` defaults to "library"; "settings" uploads land in
+   * the library without being added to any chat context. */
+  upload: (origin?: UploadOrigin) => void;
 
   // viewport
   isMobile: boolean;
@@ -102,6 +128,10 @@ export interface RagWorkspaceModel {
   setQuery: (v: string) => void;
   /** How many brochures the user has uploaded (drives the empty state). */
   uploadCount: number;
+  /** Upload cap — `uploadCount` can't exceed this. */
+  uploadLimit: number;
+  /** Every brochure the user has uploaded (Manage brochures). */
+  uploads: Doc[];
   libraryShown: Doc[];
 }
 
@@ -128,6 +158,7 @@ export function useRagWorkspace({
   const [indexName, setIndexName] = useState("");
   const [indexPct, setIndexPct] = useState(0);
   const [indexStage, setIndexStage] = useState("");
+  const [uploadOrigin, setUploadOrigin] = useState<UploadOrigin | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -140,20 +171,20 @@ export function useRagWorkspace({
   const streamingRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  const activeDocs = useCallback(() => docs.filter((d) => d.added && d.on), [docs]);
+  const activeDocs = useCallback(
+    () => docs.filter((d) => d.added && d.on),
+    [docs],
+  );
 
   /** Queue a bot message after a simulated think delay. */
   const push = useCallback(
     (msg: Omit<Message, "role">, delay?: number) => {
       setTyping(true);
       if (replyTimer.current) clearTimeout(replyTimer.current);
-      replyTimer.current = setTimeout(
-        () => {
-          setTyping(false);
-          setMessages((m) => m.concat([{ role: "bot", ...msg }]));
-        },
-        delay ?? latencyMs,
-      );
+      replyTimer.current = setTimeout(() => {
+        setTyping(false);
+        setMessages((m) => m.concat([{ role: "bot", ...msg }]));
+      }, delay ?? latencyMs);
     },
     [latencyMs],
   );
@@ -217,7 +248,9 @@ export function useRagWorkspace({
       const live = activeDocs();
       if (!live.length) {
         push({
-          paras: ["Every brochure in the chat context is paused — switch one back on and ask again."],
+          paras: [
+            "Every brochure in the chat context is paused — switch one back on and ask again.",
+          ],
         });
         return;
       }
@@ -247,7 +280,11 @@ export function useRagWorkspace({
 
       void streamMessage(
         activeChat,
-        { content: text, mode: retrievalMode, documentIds: live.map((d) => d.id) },
+        {
+          content: text,
+          mode: retrievalMode,
+          documentIds: live.map((d) => d.id),
+        },
         {
           onToken: (t) => {
             acc += t;
@@ -262,7 +299,10 @@ export function useRagWorkspace({
           onDone: finish,
           onError: (detail) => {
             ensureBot();
-            patchLastBot({ paras: [`Something went wrong: ${detail}`], cites: [] });
+            patchLastBot({
+              paras: [`Something went wrong: ${detail}`],
+              cites: [],
+            });
             finish();
           },
         },
@@ -273,7 +313,10 @@ export function useRagWorkspace({
           return;
         }
         ensureBot();
-        patchLastBot({ paras: [`Something went wrong: ${String(e)}`], cites: [] });
+        patchLastBot({
+          paras: [`Something went wrong: ${String(e)}`],
+          cites: [],
+        });
         finish();
       });
     },
@@ -291,125 +334,176 @@ export function useRagWorkspace({
     setMessages([]);
   }, []);
 
-  const uploadReal = useCallback(() => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/pdf,.pdf";
-    input.onchange = () => {
-      const file = input.files?.[0];
-      if (!file) return;
+  const uploadReal = useCallback(
+    (origin: UploadOrigin) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/pdf,.pdf";
+      input.onchange = () => {
+        const file = input.files?.[0];
+        if (!file) {
+          setUploadOrigin(null);
+          return;
+        }
 
-      setIndexing(true);
-      setIndexName(file.name);
-      setIndexStage("Uploading");
-      setIndexPct(8);
+        setIndexing(true);
+        setIndexName(file.name);
+        setIndexStage("Uploading");
+        setIndexPct(8);
 
-      const fail = (msg: string) => {
-        setIndexing(false);
-        push({ paras: [msg], cites: [] });
-      };
-
-      const poll = (id: string) => {
-        getDocument(id)
-          .then((d) => {
-            const [label, pct] = REAL_INDEX_STAGES[d.status] ?? ["Working", 60];
-            setIndexStage(label);
-            setIndexPct(pct);
-            if (d.status === "ready") {
-              setDocs((cur) => [{ ...apiDocToDoc(d), on: true, added: true }, ...cur]);
-              setIndexing(false);
-              push(
-                {
-                  paras: [
-                    `${d.title.replace(/\.pdf$/, "")} is ready — ${d.page_count} pages. Ask me something about it.`,
-                  ],
-                  cites: [],
-                },
-                300,
-              );
-              return;
-            }
-            if (d.status === "failed") {
-              fail(`Indexing failed for ${d.title}.`);
-              return;
-            }
-            idxTimer.current = setTimeout(() => poll(id), 1200);
-          })
-          .catch((e: unknown) => fail(`Lost track of the upload: ${String(e)}`));
-      };
-
-      uploadDocument(file)
-        .then((created) => {
-          idxTimer.current = setTimeout(() => poll(created.id), 800);
-        })
-        .catch((e: unknown) => fail(`Upload failed: ${String(e)}`));
-    };
-    input.click();
-  }, [push]);
-
-  const upload = useCallback(() => {
-    if (indexing) return;
-    if (!USE_MOCK) {
-      uploadReal();
-      return;
-    }
-    const name = UPLOAD_NAMES[uploadSeq.current % UPLOAD_NAMES.length];
-    uploadSeq.current += 1;
-
-    setIndexing(true);
-    setIndexName(name);
-    setIndexPct(6);
-    setIndexStage("Uploading");
-
-    let i = 0;
-    const step = () => {
-      if (i >= INDEX_STAGES.length) {
-        const uploaded: Doc = {
-          id: `u${Date.now()}`,
-          title: name,
-          tag: "Unsorted",
-          make: "",
-          source: "upload",
-          pages: 29,
-          chunks: 348,
-          on: true,
-          added: true,
+        const fail = (msg: string) => {
+          setIndexing(false);
+          setUploadOrigin(null);
+          push({ paras: [msg], cites: [] });
         };
-        setDocs((d) => [uploaded, ...d]);
-        setIndexing(false);
-        push(
-          {
+
+        const poll = (id: string) => {
+          getDocument(id)
+            .then((d) => {
+              const [label, pct] = REAL_INDEX_STAGES[d.status] ?? [
+                "Working",
+                60,
+              ];
+              setIndexStage(label);
+              setIndexPct(pct);
+              if (d.status === "ready") {
+                setDocs((cur) => [
+                  { ...apiDocToDoc(d), on: true, added: origin === "library" },
+                  ...cur,
+                ]);
+                setIndexing(false);
+                setUploadOrigin(null);
+                if (origin === "library") {
+                  push(
+                    {
+                      paras: [
+                        `${d.title.replace(/\.pdf$/, "")} is ready — ${d.page_count} pages. Ask me something about it.`,
+                      ],
+                      cites: [],
+                    },
+                    300,
+                  );
+                }
+                return;
+              }
+              if (d.status === "failed") {
+                fail(`Indexing failed for ${d.title}.`);
+                return;
+              }
+              idxTimer.current = setTimeout(() => poll(id), 1200);
+            })
+            .catch((e: unknown) =>
+              fail(`Lost track of the upload: ${String(e)}`),
+            );
+        };
+
+        uploadDocument(file)
+          .then((created) => {
+            idxTimer.current = setTimeout(() => poll(created.id), 800);
+          })
+          .catch((e: unknown) => fail(`Upload failed: ${String(e)}`));
+      };
+      input.click();
+    },
+    [push],
+  );
+
+  const upload = useCallback(
+    (origin: UploadOrigin = "library") => {
+      if (indexing) return;
+      if (docs.filter((d) => d.source === "upload").length >= MAX_UPLOADS) {
+        if (origin === "library") {
+          push({
             paras: [
-              `${name.replace(/\.pdf$/, "")} is ready — 29 pages — and I'm now reading it.`,
-              "Ask me something about it.",
+              `You've reached the ${MAX_UPLOADS}-brochure upload limit — delete one to add another.`,
             ],
             cites: [],
-          },
-          600,
-        );
+          });
+        }
         return;
       }
-      const [label, pct] = INDEX_STAGES[i];
-      setIndexStage(label);
-      setIndexPct(pct);
-      i += 1;
-      idxTimer.current = setTimeout(step, 700);
-    };
-    idxTimer.current = setTimeout(step, 450);
-  }, [indexing, push, uploadReal]);
+      setUploadOrigin(origin);
+      if (!USE_MOCK) {
+        uploadReal(origin);
+        return;
+      }
+      const name = UPLOAD_NAMES[uploadSeq.current % UPLOAD_NAMES.length];
+      uploadSeq.current += 1;
+
+      setIndexing(true);
+      setIndexName(name);
+      setIndexPct(6);
+      setIndexStage("Uploading");
+
+      let i = 0;
+      const step = () => {
+        if (i >= INDEX_STAGES.length) {
+          const uploaded: Doc = {
+            id: `u${Date.now()}`,
+            title: name,
+            tag: "Unsorted",
+            make: "",
+            source: "upload",
+            pages: 29,
+            chunks: 348,
+            on: true,
+            // Settings uploads land in the library only — never auto-added
+            // to a chat's context.
+            added: origin === "library",
+          };
+          setDocs((d) => [uploaded, ...d]);
+          setIndexing(false);
+          setUploadOrigin(null);
+          if (origin === "library") {
+            push(
+              {
+                paras: [
+                  `${name.replace(/\.pdf$/, "")} is ready — 29 pages — and I'm now reading it.`,
+                  "Ask me something about it.",
+                ],
+                cites: [],
+              },
+              600,
+            );
+          }
+          return;
+        }
+        const [label, pct] = INDEX_STAGES[i];
+        setIndexStage(label);
+        setIndexPct(pct);
+        i += 1;
+        idxTimer.current = setTimeout(step, 700);
+      };
+      idxTimer.current = setTimeout(step, 450);
+    },
+    [indexing, docs, push, uploadReal],
+  );
 
   const toggleAdd = useCallback((id: string) => {
     setDocs((d) => {
       const target = d.find((x) => x.id === id);
       if (!target) return d;
       // Cap the context at MAX_CONTEXT brochures; removing is always allowed.
-      if (!target.added && d.filter((x) => x.added).length >= MAX_CONTEXT) return d;
-      return d.map((x) => (x.id === id ? { ...x, added: !x.added, on: true } : x));
+      if (!target.added && d.filter((x) => x.added).length >= MAX_CONTEXT)
+        return d;
+      return d.map((x) =>
+        x.id === id ? { ...x, added: !x.added, on: true } : x,
+      );
     });
   }, []);
 
   const toggleOn = useCallback((id: string) => {
     setDocs((d) => d.map((x) => (x.id === id ? { ...x, on: !x.on } : x)));
+  }, []);
+
+  const renameDoc = useCallback((id: string, title: string) => {
+    const next = title.trim();
+    if (!next) return;
+    setDocs((d) => d.map((x) => (x.id === id ? { ...x, title: next } : x)));
+  }, []);
+
+  const deleteDoc = useCallback((id: string) => {
+    setDocs((d) => d.filter((x) => x.id !== id));
   }, []);
 
   /** On phones the sidebar is a drawer — dismiss it after a nav action. */
@@ -450,7 +544,10 @@ export function useRagWorkspace({
     [chats, activeChat, reset],
   );
 
-  const requestDeleteChat = useCallback((id: string) => setPendingDeleteId(id), []);
+  const requestDeleteChat = useCallback(
+    (id: string) => setPendingDeleteId(id),
+    [],
+  );
   const cancelDeleteChat = useCallback(() => setPendingDeleteId(null), []);
   const confirmDeleteChat = useCallback(() => {
     if (pendingDeleteId) deleteChat(pendingDeleteId);
@@ -469,12 +566,16 @@ export function useRagWorkspace({
 
   const contextDocs = useMemo(() => docs.filter((d) => d.added), [docs]);
 
-  const activeCount = useMemo(() => contextDocs.filter((d) => d.on).length, [contextDocs]);
+  const activeCount = useMemo(
+    () => contextDocs.filter((d) => d.on).length,
+    [contextDocs],
+  );
 
-  const uploadCount = useMemo(
-    () => docs.filter((d) => d.source === "upload").length,
+  const uploads = useMemo(
+    () => docs.filter((d) => d.source === "upload"),
     [docs],
   );
+  const uploadCount = uploads.length;
 
   const libraryShown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -529,11 +630,14 @@ export function useRagWorkspace({
     activeCount,
     toggleAdd,
     toggleOn,
+    renameDoc,
+    deleteDoc,
 
     indexing,
     indexName,
     indexStage,
     indexPct,
+    uploadOrigin,
     upload,
 
     isMobile,
@@ -576,6 +680,8 @@ export function useRagWorkspace({
     query,
     setQuery,
     uploadCount,
+    uploadLimit: MAX_UPLOADS,
+    uploads,
     libraryShown,
   };
 }

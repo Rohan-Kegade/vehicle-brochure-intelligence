@@ -12,6 +12,19 @@ import {
   trackFill,
 } from "./ui.ts";
 
+/** Props for the tiny checkmark drawn in a selected row's checkbox. */
+const checkIcon = {
+  width: 12,
+  height: 12,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
 interface LibraryModalProps {
   query: string;
   /** Total brochures the user has uploaded — drives the empty state. */
@@ -46,28 +59,36 @@ export function LibraryModal({
   const row = (d: Doc) => {
     const meta = [d.make, d.tag, `${d.pages} pages`].filter(Boolean).join(" · ");
     return (
-      <div
+      <button
         key={d.id}
-        className="flex items-center gap-3.5 px-3.5 py-[13px] border border-line-card rounded-[12px] bg-surface-3 hover:border-line-4"
+        type="button"
+        role="checkbox"
+        aria-checked={d.added}
+        className={`flex items-center gap-3 w-full text-left px-3.5 py-[13px] border rounded-[12px] cursor-pointer transition-colors duration-[140ms] ${
+          d.added
+            ? "border-accent-line bg-accent-tint-2"
+            : "border-line-card bg-surface-3 hover:border-line-4"
+        }`}
+        onClick={() => onToggleAdd(d.id)}
       >
-        <div className="flex-1 min-w-0">
-          <div className="text-[13.5px] text-text-soft truncate">{d.title}</div>
-          <div className="font-mono text-[10px] text-text-ghost mt-[5px] tracking-[0.04em]">
+        <span className="flex-1 min-w-0">
+          <span className="block text-[13.5px] text-text-soft truncate">{d.title}</span>
+          <span className="block font-mono text-[10px] text-text-ghost mt-[5px] tracking-[0.04em]">
             {meta}
-          </div>
-        </div>
-        <button
-          className={`flex-none px-3 py-[7px] rounded-[8px] border font-mono text-[10px] tracking-[0.06em] cursor-pointer ${
+          </span>
+        </span>
+        <span
+          className={`flex-none grid place-items-center w-[20px] h-[20px] rounded-[6px] border transition-colors duration-[140ms] ${
             d.added
-              ? "border-accent-line bg-accent-tint-2 text-accent-text-soft hover:border-line-hover"
-              : "border-line-4 bg-surface-6 text-text-dim hover:border-accent hover:text-text"
+              ? "border-accent-line bg-accent text-accent-ink"
+              : "border-line-4 bg-surface-6 text-transparent"
           }`}
-          title={d.added ? "Remove this brochure" : undefined}
-          onClick={() => onToggleAdd(d.id)}
         >
-          {d.added ? "Added ✓" : "Add"}
-        </button>
-      </div>
+          <svg {...checkIcon}>
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </span>
+      </button>
     );
   };
 
@@ -77,7 +98,7 @@ export function LibraryModal({
       onClick={onClose}
     >
       <div
-        className={`${dialog} w-[min(660px,100%)] max-h-[min(700px,90dvh)]`}
+        className={`${dialog} w-[min(560px,100%)] max-h-[min(600px,85dvh)]`}
         role="dialog"
         aria-modal="true"
         aria-label="Add vehicle brochure"
@@ -86,7 +107,7 @@ export function LibraryModal({
         <div className="flex-none px-[18px] pt-[15px]">
           <div className="flex items-center justify-between gap-3 pb-2">
             <div className="text-[13px] font-bold tracking-[0.02em] text-text">
-              Search library
+              Brochure library
             </div>
             <button
               className={`${dialogCloseBase} w-[30px] h-[30px] rounded-[9px] text-[15px]`}
