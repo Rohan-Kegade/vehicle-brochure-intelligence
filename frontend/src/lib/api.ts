@@ -16,6 +16,54 @@ export const USE_MOCK =
 
 const API_BASE = "/api";
 
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+function csrfToken(): string | null {
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * `fetch` for the API: sends cookies, echoes the CSRF token on unsafe methods,
+ * and transparently retries once through `/auth/refresh` on a 401 so an expired
+ * access token doesn't surface to callers.
+ */
+export async function apiFetch(
+  path: string,
+  init: RequestInit = {},
+  _retried = false,
+): Promise<Response> {
+  const method = (init.method ?? "GET").toUpperCase();
+  const headers = new Headers(init.headers);
+  if (!SAFE_METHODS.has(method)) {
+    const token = csrfToken();
+    if (token) headers.set("x-csrf-token", token);
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    method,
+    headers,
+    credentials: "include",
+  });
+
+  if (
+    res.status === 401 &&
+    !_retried &&
+    path !== "/auth/refresh" &&
+    path !== "/auth/me"
+  ) {
+    const refreshed = await fetch(`${API_BASE}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: csrfToken() ? { "x-csrf-token": csrfToken()! } : undefined,
+    });
+    if (refreshed.ok) return apiFetch(path, init, true);
+  }
+
+  return res;
+}
+
 export type DocStatus = "uploading" | "parsing" | "embedding" | "ready" | "failed";
 
 export interface ApiDoc {
@@ -33,13 +81,13 @@ export interface ApiDoc {
 }
 
 export async function listDocuments(): Promise<ApiDoc[]> {
-  const res = await fetch(`${API_BASE}/documents`);
+  const res = await apiFetch("/documents");
   if (!res.ok) throw new Error(`list documents failed (${res.status})`);
   return res.json();
 }
 
 export async function getDocument(id: string): Promise<ApiDoc> {
-  const res = await fetch(`${API_BASE}/documents/${id}`);
+  const res = await apiFetch(`/documents/${id}`);
   if (!res.ok) throw new Error(`get document failed (${res.status})`);
   return res.json();
 }
@@ -53,9 +101,84 @@ export async function uploadDocument(
   if (opts.title) form.append("title", opts.title);
   if (opts.tag) form.append("tag", opts.tag);
 
-  const res = await fetch(`${API_BASE}/documents`, { method: "POST", body: form });
+  const res = await apiFetch("/documents", { method: "POST", body: form });
   if (!res.ok) throw new Error(`upload failed (${res.status})`);
   return res.json();
+}
+
+export async function deleteDocument(id: string): Promise<void> {
+  const res = await apiFetch(`/documents/${id}`, { method: "DELETE" });
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`delete document failed (${res.status})`);
+  }
+}
+
+// ---- conversations --------------------------------------------------------
+
+export interface ApiConversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  citations: string[] | null;
+  mode: string | null;
+  created_at: string;
+}
+
+export interface ApiConversationDetail extends ApiConversation {
+  messages: ApiMessage[];
+}
+
+export async function listConversations(): Promise<ApiConversation[]> {
+  const res = await apiFetch("/conversations");
+  if (!res.ok) throw new Error(`list conversations failed (${res.status})`);
+  return res.json();
+}
+
+export async function createConversation(
+  title?: string,
+): Promise<ApiConversation> {
+  const res = await apiFetch("/conversations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: title ?? null }),
+  });
+  if (!res.ok) throw new Error(`create conversation failed (${res.status})`);
+  return res.json();
+}
+
+export async function getConversation(
+  id: string,
+): Promise<ApiConversationDetail> {
+  const res = await apiFetch(`/conversations/${id}`);
+  if (!res.ok) throw new Error(`get conversation failed (${res.status})`);
+  return res.json();
+}
+
+export async function renameConversation(
+  id: string,
+  title: string,
+): Promise<ApiConversation> {
+  const res = await apiFetch(`/conversations/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
+  if (!res.ok) throw new Error(`rename conversation failed (${res.status})`);
+  return res.json();
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  const res = await apiFetch(`/conversations/${id}`, { method: "DELETE" });
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`delete conversation failed (${res.status})`);
+  }
 }
 
 export interface StreamHandlers {
@@ -72,11 +195,16 @@ export async function streamMessage(
   handlers: StreamHandlers,
   signal?: AbortSignal,
 ): Promise<void> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = csrfToken();
+  if (token) headers["x-csrf-token"] = token;
+
   const res = await fetch(
     `${API_BASE}/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
+      credentials: "include",
       body: JSON.stringify({
         content: body.content,
         mode: body.mode,

@@ -1,5 +1,5 @@
 import { LogOut, PanelLeftOpen, Plus, Search, Settings } from "lucide-react";
-import { ACCOUNT } from "../data.ts";
+import { initialsFrom, useAuth } from "../lib/auth.tsx";
 
 interface CollapsedRailProps {
   onExpand: () => void;
@@ -23,6 +23,7 @@ export function CollapsedRail({
   onOpenChatSearch,
   onOpenSettings,
 }: CollapsedRailProps) {
+  const { user, logout } = useAuth();
   return (
     <div className="flex-none w-[60px] flex flex-col items-center gap-2 py-4 border-r border-line bg-surface-0 transition-colors duration-200 max-phone:hidden">
       <div className="w-8 h-8 flex-none rounded-[9px] border border-line-4 bg-logo grid place-items-center font-mono text-[12px] text-accent-text">
@@ -57,7 +58,7 @@ export function CollapsedRail({
       <div className="flex-1" />
 
       <div className="w-[30px] h-[30px] flex-none rounded-full border border-line-4 bg-surface-5 grid place-items-center font-mono text-[11px] text-accent-text-soft">
-        {ACCOUNT.initials}
+        {user ? initialsFrom(user.fullName, user.email) : ""}
       </div>
       <button
         className={railIcon}
@@ -67,7 +68,12 @@ export function CollapsedRail({
       >
         <Settings size={15} strokeWidth={1.7} aria-hidden />
       </button>
-      <button className={railIcon} title="Log out" aria-label="Log out">
+      <button
+        className={railIcon}
+        title="Log out"
+        aria-label="Log out"
+        onClick={() => void logout()}
+      >
         <LogOut size={15} strokeWidth={1.7} aria-hidden />
       </button>
     </div>

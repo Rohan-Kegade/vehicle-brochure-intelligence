@@ -19,7 +19,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { Theme } from "../lib/useTheme.ts";
 import type { Chat, Doc } from "../types.ts";
-import { ACCOUNT } from "../data.ts";
+import { PLAN_LABEL } from "../data.ts";
+import { initialsFrom, useAuth } from "../lib/auth.tsx";
 import {
   dialog,
   dialogCloseBase,
@@ -104,8 +105,9 @@ const sectionNote =
   "font-mono text-[10px] text-text-ghost tracking-[0.06em] mt-1";
 
 function Profile() {
-  const [name, setName] = useState<string>(ACCOUNT.name);
-  const [email, setEmail] = useState<string>(ACCOUNT.email);
+  const { user } = useAuth();
+  const [name, setName] = useState<string>(user?.fullName ?? "");
+  const [email, setEmail] = useState<string>(user?.email ?? "");
   const [pwOpen, setPwOpen] = useState(false);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -131,7 +133,7 @@ function Profile() {
       </div>
 
       <div className="w-[52px] h-[52px] flex-none rounded-full border border-line-4 bg-surface-5 grid place-items-center font-mono text-[16px] text-accent-text-soft">
-        {ACCOUNT.initials}
+        {user ? initialsFrom(user.fullName, user.email) : ""}
       </div>
 
       <label>
@@ -300,16 +302,17 @@ function Appearance({
 }
 
 function Account({ onClose }: { onClose: () => void }) {
+  const { user, logout } = useAuth();
   return (
     <div className="flex flex-col gap-5">
       <div>
         <div className={sectionTitle}>Account</div>
-        <div className={sectionNote}>{ACCOUNT.email}</div>
+        <div className={sectionNote}>{user?.email}</div>
       </div>
 
       <div className="flex items-center justify-between gap-3 px-3.5 py-3 rounded-[12px] border border-line-card bg-surface-3">
         <div>
-          <div className="text-[13px] text-text-soft">{ACCOUNT.plan}</div>
+          <div className="text-[13px] text-text-soft">{PLAN_LABEL}</div>
           <div className="font-mono text-[9.5px] text-text-ghost tracking-[0.04em] mt-1">
             Basic retrieval, 2 brochures in context
           </div>
@@ -326,13 +329,18 @@ function Account({ onClose }: { onClose: () => void }) {
         <button
           className="w-full text-left px-3.5 py-[11px] rounded-[10px] border border-line-3 bg-transparent text-[12.5px] text-text-dim cursor-pointer hover:border-line-hover hover:text-text"
           type="button"
-          onClick={onClose}
+          onClick={async () => {
+            await logout();
+            onClose();
+          }}
         >
           Log out
         </button>
         <button
-          className="w-full text-left px-3.5 py-[11px] rounded-[10px] border border-line-3 bg-transparent text-[12.5px] text-text-dim cursor-pointer hover:border-danger hover:text-danger"
+          className="w-full text-left px-3.5 py-[11px] rounded-[10px] border border-line-3 bg-transparent text-[12.5px] text-text-dim cursor-not-allowed opacity-60"
           type="button"
+          disabled
+          title="Account deletion isn't available yet"
         >
           Delete account
         </button>

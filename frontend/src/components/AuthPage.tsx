@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Check, Eye, EyeOff } from "lucide-react";
 import { NavLink } from "./NavLink.tsx";
+import { useAuth } from "../lib/auth.tsx";
 
 interface AuthPageProps {
   mode: "signup" | "login";
@@ -30,18 +31,39 @@ const oauthBtn =
 
 export function AuthPage({ mode, onNavigate }: AuthPageProps) {
   const signup = mode === "signup";
+  const { register, login } = useAuth();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Match the design: switching between the two forms clears the password.
-  useEffect(() => setPassword(""), [mode]);
+  useEffect(() => {
+    setPassword("");
+    setError(null);
+  }, [mode]);
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    onNavigate("/app");
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (signup) await register(email.trim(), password, name.trim() || undefined);
+      else await login(email.trim(), password);
+      onNavigate("/app");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startGoogle = () => {
+    window.location.href = "/api/auth/google/start";
   };
 
   return (
@@ -83,13 +105,9 @@ export function AuthPage({ mode, onNavigate }: AuthPageProps) {
           )}
 
           <div className="mb-[22px] flex flex-col gap-2.5">
-            <button type="button" className={oauthBtn} onClick={() => onNavigate("/app")}>
+            <button type="button" className={oauthBtn} onClick={startGoogle}>
               <span className="font-mono text-[13px] text-accent-text">G</span>
               <span>Continue with Google</span>
-            </button>
-            <button type="button" className={oauthBtn} onClick={() => onNavigate("/app")}>
-              <span className="font-mono text-[13px] text-accent-text">⌘</span>
-              <span>Continue with Apple</span>
             </button>
           </div>
 
@@ -166,11 +184,27 @@ export function AuthPage({ mode, onNavigate }: AuthPageProps) {
               )}
             </label>
 
+            {error && (
+              <p
+                role="alert"
+                className="rounded-[10px] border border-danger/40 bg-danger/10 px-3 py-2.5 text-[12.5px] leading-[1.5] text-danger"
+              >
+                {error}
+              </p>
+            )}
+
             <button
               type="submit"
-              className="mt-1 rounded-[11px] border-0 bg-accent px-[18px] py-[13px] text-[14.5px] font-semibold text-accent-ink transition-colors hover:bg-accent-bright"
+              disabled={busy}
+              className="mt-1 rounded-[11px] border-0 bg-accent px-[18px] py-[13px] text-[14.5px] font-semibold text-accent-ink transition-colors hover:bg-accent-bright disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {signup ? "Create account" : "Sign in"}
+              {busy
+                ? signup
+                  ? "Creating account…"
+                  : "Signing in…"
+                : signup
+                  ? "Create account"
+                  : "Sign in"}
             </button>
 
             {signup && (

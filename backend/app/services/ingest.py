@@ -59,6 +59,7 @@ async def ingest_document(document_id: uuid.UUID, *, embedder: Embeddings | None
                         metadata={
                             "chunk_id": str(row.id),
                             "document_id": str(doc.id),
+                            "user_id": str(doc.user_id),
                             "document_title": doc.title,
                             "page_start": row.page_start,
                             "page_end": row.page_end,

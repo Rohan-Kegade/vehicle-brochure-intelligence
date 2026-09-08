@@ -5,14 +5,15 @@ from collections.abc import AsyncIterator
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app.api.deps import CSRF_COOKIE, CSRF_HEADER, get_current_user
 from app.config import get_settings
 from app.db import get_session
 from app.main import app
-from app.models import Document
+from app.models import Document, User
 from app.services import vector_store
 from app.services.storage import get_storage
 
@@ -26,6 +27,8 @@ from app.services.storage import get_storage
 
 _engine = create_async_engine(get_settings().database_url, poolclass=NullPool)
 _session_maker = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
+
+_TEST_CSRF = "test-csrf-token"
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
@@ -66,7 +69,48 @@ def _no_background_ingest(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest_asyncio.fixture
-async def client() -> AsyncIterator[AsyncClient]:
+async def test_user() -> AsyncIterator[User]:
+    """A persisted user for the request under test. Deleting it cascades to any
+    documents/conversations left behind."""
+    user = User(
+        email=f"test-{uuid.uuid4().hex[:12]}@example.com",
+        hashed_password="not-a-real-hash",
+        full_name="Test User",
+    )
+    async with _session_maker() as session:
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        session.expunge(user)
+    yield user
+    async with _session_maker() as session:
+        await session.execute(delete(User).where(User.id == user.id))
+        await session.commit()
+
+
+@pytest_asyncio.fixture
+async def client(test_user: User) -> AsyncIterator[AsyncClient]:
+    async def _get_test_session() -> AsyncIterator[AsyncSession]:
+        async with _session_maker() as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _get_test_session
+    app.dependency_overrides[get_current_user] = lambda: test_user
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        cookies={CSRF_COOKIE: _TEST_CSRF},
+        headers={CSRF_HEADER: _TEST_CSRF},
+    ) as ac:
+        yield ac
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def anon_client() -> AsyncIterator[AsyncClient]:
+    """No auth override and no CSRF header — for exercising `/auth/*` and the
+    CSRF guard itself."""
     async def _get_test_session() -> AsyncIterator[AsyncSession]:
         async with _session_maker() as session:
             yield session
@@ -84,10 +128,15 @@ async def cleanup_documents() -> AsyncIterator[list[uuid.UUID]]:
     yield created
     storage = get_storage()
     async with _session_maker() as session:
+        rows = (
+            await session.execute(select(Document).where(Document.id.in_(created)))
+        ).scalars().all()
+        keys = [r.storage_key for r in rows if r.storage_key]
         await session.execute(delete(Document).where(Document.id.in_(created)))
         await session.commit()
+    for key in keys:
+        storage.delete(key)
     for doc_id in created:
-        storage.delete(f"{doc_id}.pdf")
         with contextlib.suppress(Exception):  # best-effort vector cleanup
             await vector_store.delete_document(doc_id)
 

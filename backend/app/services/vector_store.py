@@ -84,6 +84,7 @@ async def index_chunks(
 
 async def delete_document(document_id: uuid.UUID) -> None:
     """Remove every point belonging to a document."""
+    await ensure_collection()
     await get_client().delete(
         collection_name=get_settings().qdrant_collection,
         points_selector=models.FilterSelector(

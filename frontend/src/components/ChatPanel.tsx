@@ -4,11 +4,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { FileText, MessageSquare, Plus, X } from "lucide-react";
 import type { Doc, Message } from "../types.ts";
-import { ACCOUNT, MAX_CONTEXT } from "../data.ts";
+import { MAX_CONTEXT } from "../data.ts";
+import { firstNameFrom, useAuth } from "../lib/auth.tsx";
 import { card } from "./ui.ts";
-
-/** First name of the signed-in user, for the greeting. */
-const FIRST_NAME = ACCOUNT.name.trim().split(/\s+/)[0];
 
 /** How many context chips sit inline before the rest fold into "+N more". */
 const CHIPS_SHOWN_MOBILE = 2;
@@ -27,6 +25,8 @@ function greeting() {
  * workspace does, adapting to whether a brochure is in the chat context yet.
  */
 function ChatEmptyState({ canChat }: { canChat: boolean }) {
+  const { user } = useAuth();
+  const firstName = user ? firstNameFrom(user.fullName, user.email) : "there";
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-3 px-6 py-8 animate-rise">
       <div className="flex-none w-11 h-11 rounded-[13px] border border-line-bubble bg-surface-5 flex items-center justify-center text-accent-text">
@@ -36,7 +36,7 @@ function ChatEmptyState({ canChat }: { canChat: boolean }) {
         ASK MY BROCHURES
       </div>
       <h2 className="text-[19px] font-semibold tracking-[-0.2px] text-text">
-        {greeting()}, {FIRST_NAME}
+        {greeting()}, {firstName}
       </h2>
       <p className="max-w-[380px] text-[13.5px] leading-[1.6] text-text-dim [text-wrap:pretty]">
         {canChat

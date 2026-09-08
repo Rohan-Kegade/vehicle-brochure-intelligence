@@ -1,12 +1,7 @@
 import type { Chat, Doc } from "./types.ts";
 
-/** The signed-in user. Mock — the app has no real auth yet. */
-export const ACCOUNT = {
-  name: "Maya Rao",
-  initials: "MR",
-  email: "maya.rao@example.com",
-  plan: "Free plan",
-} as const;
+/** Shown on the account card until billing exists. */
+export const PLAN_LABEL = "Free plan";
 
 /** Seed conversations for the sidebar. */
 export const INITIAL_CHATS: Chat[] = [

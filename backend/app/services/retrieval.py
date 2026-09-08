@@ -79,17 +79,25 @@ def _to_retrieved(doc: LCDocument, score: float) -> RetrievedChunk:
     )
 
 
-def _document_filter(document_ids: list[uuid.UUID] | None) -> models.Filter | None:
-    if not document_ids:
-        return None
-    return models.Filter(
-        must=[
+def _build_filter(
+    user_id: uuid.UUID, document_ids: list[uuid.UUID] | None
+) -> models.Filter:
+    """Every query is hard-scoped to the caller's own chunks; `document_ids`
+    narrows further within that set."""
+    must: list[models.Condition] = [
+        models.FieldCondition(
+            key="metadata.user_id",
+            match=models.MatchValue(value=str(user_id)),
+        )
+    ]
+    if document_ids:
+        must.append(
             models.FieldCondition(
                 key="metadata.document_id",
                 match=models.MatchAny(any=[str(d) for d in document_ids]),
             )
-        ]
-    )
+        )
+    return models.Filter(must=must)
 
 
 class _QdrantRetriever(BaseRetriever):
@@ -97,13 +105,14 @@ class _QdrantRetriever(BaseRetriever):
 
     embedder: Embeddings
     k: int
+    user_id: uuid.UUID
     document_ids: list[uuid.UUID] | None = None
 
     def _get_relevant_documents(
         self, query: str, *, run_manager: CallbackManagerForRetrieverRun
     ) -> list[LCDocument]:
         return get_store(self.embedder).similarity_search(
-            query, k=self.k, filter=_document_filter(self.document_ids)
+            query, k=self.k, filter=_build_filter(self.user_id, self.document_ids)
         )
 
     async def _aget_relevant_documents(
@@ -114,7 +123,7 @@ class _QdrantRetriever(BaseRetriever):
             get_store(self.embedder).similarity_search,
             query,
             k=self.k,
-            filter=_document_filter(self.document_ids),
+            filter=_build_filter(self.user_id, self.document_ids),
         )
 
 
@@ -123,6 +132,7 @@ class _PostgresFtsRetriever(BaseRetriever):
 
     session: AsyncSession
     k: int
+    user_id: uuid.UUID
     document_ids: list[uuid.UUID] | None = None
 
     model_config = {"arbitrary_types_allowed": True}
@@ -140,6 +150,7 @@ class _PostgresFtsRetriever(BaseRetriever):
             select(Chunk, Document.title)
             .join(Document, Document.id == Chunk.document_id)
             .where(Chunk.content_tsv.op("@@")(tsquery))
+            .where(Document.user_id == self.user_id)
             .order_by(func.ts_rank(Chunk.content_tsv, tsquery).desc())
             .limit(self.k)
         )
@@ -153,6 +164,7 @@ async def retrieve(
     session: AsyncSession,
     *,
     query: str,
+    user_id: uuid.UUID,
     mode: RetrievalMode = RetrievalMode.balanced,
     document_ids: list[uuid.UUID] | None = None,
     limit: int | None = None,
@@ -161,8 +173,12 @@ async def retrieve(
     limit = limit or get_settings().retrieval_top_k
     embedder = embedder or get_embedder()
 
-    vector = _QdrantRetriever(embedder=embedder, k=limit, document_ids=document_ids)
-    keyword = _PostgresFtsRetriever(session=session, k=limit, document_ids=document_ids)
+    vector = _QdrantRetriever(
+        embedder=embedder, k=limit, user_id=user_id, document_ids=document_ids
+    )
+    keyword = _PostgresFtsRetriever(
+        session=session, k=limit, user_id=user_id, document_ids=document_ids
+    )
 
     if mode is RetrievalMode.meaning:
         docs = await vector.ainvoke(query)

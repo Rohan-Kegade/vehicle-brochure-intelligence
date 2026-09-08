@@ -39,11 +39,17 @@ class _QueryEmbedder(Embeddings):
         return _unit(self.target)
 
 
-async def _seed(passages: list[tuple[str, int]], *, title: str = "Aurora_GT.pdf") -> uuid.UUID:
+async def _seed(
+    passages: list[tuple[str, int]],
+    *,
+    user_id: uuid.UUID,
+    title: str = "Aurora_GT.pdf",
+) -> uuid.UUID:
     """Insert a ready Document with one Chunk per passage, plus an orthogonal
     unit vector per chunk (chunk i -> e_i) into Qdrant."""
     async with async_session_maker() as session:
         doc = Document(
+            user_id=user_id,
             title=title,
             tag="Sedan",
             status=DocumentStatus.ready,
@@ -72,6 +78,7 @@ async def _seed(passages: list[tuple[str, int]], *, title: str = "Aurora_GT.pdf"
                 metadata={
                     "chunk_id": str(row.id),
                     "document_id": str(doc.id),
+                    "user_id": str(user_id),
                     "document_title": title,
                     "page_start": row.page_start,
                     "page_end": row.page_end,
@@ -96,12 +103,17 @@ _PASSAGES = [
 ]
 
 
-async def test_keyword_retrieval_matches_terms(cleanup_documents):
-    doc_id = await _seed(_PASSAGES)
+async def test_keyword_retrieval_matches_terms(cleanup_documents, test_user):
+    doc_id = await _seed(_PASSAGES, user_id=test_user.id)
     cleanup_documents.append(doc_id)
 
     async with async_session_maker() as session:
-        results = await retrieve(session, query="towing capacity", mode=RetrievalMode.keyword)
+        results = await retrieve(
+            session,
+            query="towing capacity",
+            user_id=test_user.id,
+            mode=RetrievalMode.keyword,
+        )
 
     assert results
     assert "towing" in results[0].content.lower()
@@ -109,14 +121,15 @@ async def test_keyword_retrieval_matches_terms(cleanup_documents):
     assert results[0].document_title == "Aurora_GT.pdf"
 
 
-async def test_meaning_retrieval_uses_query_vector(cleanup_documents):
-    doc_id = await _seed(_PASSAGES)
+async def test_meaning_retrieval_uses_query_vector(cleanup_documents, test_user):
+    doc_id = await _seed(_PASSAGES, user_id=test_user.id)
     cleanup_documents.append(doc_id)
 
     async with async_session_maker() as session:
         results = await retrieve(
             session,
             query="anything",
+            user_id=test_user.id,
             mode=RetrievalMode.meaning,
             embedder=_QueryEmbedder(target=2),
         )
@@ -125,14 +138,15 @@ async def test_meaning_retrieval_uses_query_vector(cleanup_documents):
     assert results[0].page_start == 3  # chunk index 2 -> e_2
 
 
-async def test_balanced_fuses_both_arms(cleanup_documents):
-    doc_id = await _seed(_PASSAGES)
+async def test_balanced_fuses_both_arms(cleanup_documents, test_user):
+    doc_id = await _seed(_PASSAGES, user_id=test_user.id)
     cleanup_documents.append(doc_id)
 
     async with async_session_maker() as session:
         results = await retrieve(
             session,
             query="warranty",  # keyword arm -> page 3
+            user_id=test_user.id,
             mode=RetrievalMode.balanced,
             embedder=_QueryEmbedder(target=1),  # vector arm -> page 2
         )
@@ -142,27 +156,55 @@ async def test_balanced_fuses_both_arms(cleanup_documents):
     assert len(results) <= 8
 
 
-async def test_scope_limits_to_selected_documents(cleanup_documents):
-    doc_a = await _seed(_PASSAGES, title="Aurora_GT.pdf")
-    doc_b = await _seed([("Unrelated towing content for another car.", 1)], title="Other.pdf")
+async def test_scope_limits_to_selected_documents(cleanup_documents, test_user):
+    doc_a = await _seed(_PASSAGES, user_id=test_user.id, title="Aurora_GT.pdf")
+    doc_b = await _seed(
+        [("Unrelated towing content for another car.", 1)],
+        user_id=test_user.id,
+        title="Other.pdf",
+    )
     cleanup_documents.extend([doc_a, doc_b])
 
     async with async_session_maker() as session:
         results = await retrieve(
-            session, query="towing", mode=RetrievalMode.keyword, document_ids=[doc_a]
+            session,
+            query="towing",
+            user_id=test_user.id,
+            mode=RetrievalMode.keyword,
+            document_ids=[doc_a],
         )
 
     assert results
     assert all(r.document_id == doc_a for r in results)
 
 
-async def test_no_match_returns_empty(cleanup_documents):
-    doc_id = await _seed(_PASSAGES)
+async def test_retrieval_is_scoped_to_the_owner(cleanup_documents, test_user):
+    """Chunks are invisible to a different user even with no document filter."""
+    mine = await _seed(_PASSAGES, user_id=test_user.id, title="Mine.pdf")
+    cleanup_documents.append(mine)
+
+    async with async_session_maker() as session:
+        results = await retrieve(
+            session,
+            query="towing capacity",
+            user_id=uuid.uuid4(),  # a user who owns nothing
+            mode=RetrievalMode.balanced,
+            embedder=_QueryEmbedder(target=1),
+        )
+
+    assert results == []
+
+
+async def test_no_match_returns_empty(cleanup_documents, test_user):
+    doc_id = await _seed(_PASSAGES, user_id=test_user.id)
     cleanup_documents.append(doc_id)
 
     async with async_session_maker() as session:
         results = await retrieve(
-            session, query="zzzznonexistentterm", mode=RetrievalMode.keyword
+            session,
+            query="zzzznonexistentterm",
+            user_id=test_user.id,
+            mode=RetrievalMode.keyword,
         )
 
     assert results == []

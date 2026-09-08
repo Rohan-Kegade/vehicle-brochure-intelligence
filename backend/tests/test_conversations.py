@@ -2,7 +2,10 @@ import uuid
 from collections.abc import AsyncIterator
 
 import pytest
+import pytest_asyncio
 
+from app.db import async_session_maker
+from app.models import Conversation
 from app.services.retrieval import RetrievedChunk
 
 
@@ -17,6 +20,18 @@ def _chunk(title: str, page: int, content: str) -> RetrievedChunk:
         content=content,
         score=1.0,
     )
+
+
+@pytest_asyncio.fixture
+async def conversation(test_user) -> AsyncIterator[Conversation]:
+    """A persisted, owned conversation. Cascades away with `test_user`."""
+    async with async_session_maker() as session:
+        conv = Conversation(user_id=test_user.id)
+        session.add(conv)
+        await session.commit()
+        await session.refresh(conv)
+        session.expunge(conv)
+    yield conv
 
 
 @pytest.fixture
@@ -37,14 +52,16 @@ def patch_pipeline(monkeypatch):
     return _install
 
 
-async def test_message_streams_answer_and_citations(client, patch_pipeline):
+async def test_message_streams_answer_and_citations(
+    client, conversation, patch_pipeline
+):
     patch_pipeline(
         [_chunk("Aurora_GT.pdf", 12, "Towing capacity is 5,000 lb.")],
         "The towing capacity is 5,000 lb.",
     )
 
     resp = await client.post(
-        "/conversations/c1/messages",
+        f"/conversations/{conversation.id}/messages",
         json={"content": "What can it tow?", "mode": "Balanced"},
     )
 
@@ -53,16 +70,37 @@ async def test_message_streams_answer_and_citations(client, patch_pipeline):
     body = resp.text
     assert "event: token" in body
     assert "5,000" in body
-    assert 'event: citations' in body
+    assert "event: citations" in body
     assert "Aurora GT \\u2014 page 12" in body or "Aurora GT — page 12" in body
-    assert body.strip().endswith("event: done\ndata: {}") or "event: done" in body
+    assert "event: done" in body
 
 
-async def test_message_without_context_is_honest(client, patch_pipeline):
+async def test_message_is_persisted_to_the_conversation(
+    client, conversation, patch_pipeline
+):
+    patch_pipeline([_chunk("Aurora_GT.pdf", 3, "Seats five.")], "It seats five.")
+
+    await client.post(
+        f"/conversations/{conversation.id}/messages",
+        json={"content": "How many seats?"},
+    )
+
+    detail = await client.get(f"/conversations/{conversation.id}")
+    assert detail.status_code == 200
+    body = detail.json()
+    roles = [m["role"] for m in body["messages"]]
+    assert roles == ["user", "assistant"]
+    assert body["messages"][0]["content"] == "How many seats?"
+    assert "seats five" in body["messages"][1]["content"].lower()
+    # first message became the auto-title
+    assert body["title"] == "How many seats?"
+
+
+async def test_message_without_context_is_honest(client, conversation, patch_pipeline):
     patch_pipeline([], "unused")
 
     resp = await client.post(
-        "/conversations/c1/messages",
+        f"/conversations/{conversation.id}/messages",
         json={"content": "Tell me about a car we never indexed."},
     )
 
@@ -73,14 +111,44 @@ async def test_message_without_context_is_honest(client, patch_pipeline):
     assert "event: done" in body
 
 
-async def test_message_rejects_empty_content(client):
-    resp = await client.post("/conversations/c1/messages", json={"content": ""})
+async def test_message_on_unknown_conversation_is_404(client, patch_pipeline):
+    patch_pipeline([_chunk("x.pdf", 1, "y")], "z")
+    resp = await client.post(
+        f"/conversations/{uuid.uuid4()}/messages",
+        json={"content": "hello"},
+    )
+    assert resp.status_code == 404
+
+
+async def test_message_rejects_empty_content(client, conversation):
+    resp = await client.post(
+        f"/conversations/{conversation.id}/messages", json={"content": ""}
+    )
     assert resp.status_code == 422
 
 
-async def test_message_rejects_unknown_mode(client):
+async def test_message_rejects_unknown_mode(client, conversation):
     resp = await client.post(
-        "/conversations/c1/messages",
+        f"/conversations/{conversation.id}/messages",
         json={"content": "hi", "mode": "psychic"},
     )
     assert resp.status_code == 422
+
+
+async def test_conversation_crud_roundtrip(client):
+    created = await client.post("/conversations", json={})
+    assert created.status_code == 201
+    conv_id = created.json()["id"]
+
+    listing = await client.get("/conversations")
+    assert conv_id in {c["id"] for c in listing.json()}
+
+    renamed = await client.patch(
+        f"/conversations/{conv_id}", json={"title": "Towing questions"}
+    )
+    assert renamed.status_code == 200
+    assert renamed.json()["title"] == "Towing questions"
+
+    deleted = await client.delete(f"/conversations/{conv_id}")
+    assert deleted.status_code == 204
+    assert (await client.get(f"/conversations/{conv_id}")).status_code == 404

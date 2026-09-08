@@ -16,11 +16,17 @@ import {
 } from "../data.ts";
 import { composeAnswer } from "./answers.ts";
 import {
+  type ApiMessage,
   type DocStatus,
   USE_MOCK,
   apiDocToDoc,
+  createConversation,
+  deleteConversation,
   getDocument,
+  getConversation,
+  listConversations,
   listDocuments,
+  renameConversation,
   streamMessage,
   textToParas,
   uploadDocument,
@@ -35,6 +41,27 @@ export type UploadOrigin = "library" | "settings";
 
 const matchesMobile = () =>
   typeof window !== "undefined" && !!window.matchMedia?.(MOBILE_QUERY).matches;
+
+/** ISO timestamp -> a coarse "when" label for the sidebar. */
+function relativeDay(iso: string): string {
+  const then = new Date(iso);
+  const days = Math.floor((Date.now() - then.getTime()) / 86_400_000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return `${days} days ago`;
+  return then.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+/** A persisted message row -> the <MessageRow> shape. */
+function apiMsgToMessage(m: ApiMessage): Message {
+  if (m.role === "user") return { role: "me", paras: [m.content] };
+  return {
+    role: "bot",
+    paras: textToParas(m.content),
+    md: m.content,
+    cites: m.citations ?? [],
+  };
+}
 
 /** Backend ingest status -> [label, percent] for the indexing banner. */
 const REAL_INDEX_STAGES: Record<DocStatus, [string, number]> = {
@@ -153,8 +180,8 @@ export function useRagWorkspace({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
   const [chatQuery, setChatQuery] = useState("");
-  const [activeChat, setActiveChat] = useState("c1");
-  const [chats, setChats] = useState<Chat[]>(INITIAL_CHATS);
+  const [activeChat, setActiveChat] = useState(USE_MOCK ? "c1" : "");
+  const [chats, setChats] = useState<Chat[]>(USE_MOCK ? INITIAL_CHATS : []);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [docs, setDocs] = useState<Doc[]>(USE_MOCK ? INITIAL_DOCS : []);
 
@@ -174,6 +201,9 @@ export function useRagWorkspace({
   typingRef.current = typing;
   const streamingRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+  // Guards the one-shot mount bootstrap against React StrictMode's double-invoke
+  // (which would otherwise create two "New chat" conversations).
+  const bootstrappedRef = useRef(false);
 
   const activeDocs = useCallback(
     () => docs.filter((d) => d.added && d.on),
@@ -196,13 +226,36 @@ export function useRagWorkspace({
   // mount: in real mode load the indexed library. The chat opens on an empty
   // state (see <ChatPanel>) rather than a canned welcome message.
   useEffect(() => {
-    if (!USE_MOCK) {
+    if (!USE_MOCK && !bootstrappedRef.current) {
+      bootstrappedRef.current = true;
       listDocuments()
         .then((list) =>
           setDocs(list.filter((d) => d.status === "ready").map(apiDocToDoc)),
         )
         .catch(() => {
           /* backend offline — leave the library empty */
+        });
+
+      // Load the user's conversations; open the most recent, or start one.
+      listConversations()
+        .then(async (list) => {
+          if (list.length === 0) {
+            const conv = await createConversation();
+            setChats([{ id: conv.id, title: conv.title, when: "Today" }]);
+            setActiveChat(conv.id);
+            return;
+          }
+          setChats(
+            list.map((c) => ({
+              id: c.id,
+              title: c.title,
+              when: relativeDay(c.updated_at),
+            })),
+          );
+          setActiveChat((cur) => cur || list[0].id);
+        })
+        .catch(() => {
+          /* backend offline — sidebar stays empty */
         });
     }
     return () => {
@@ -248,6 +301,23 @@ export function useRagWorkspace({
 
       setMessages((m) => m.concat([{ role: "me", paras: [text] }]));
       setDraft("");
+
+      // First question in an untitled chat: mirror the backend's auto-title and
+      // float the conversation to the top of the list.
+      setChats((cs) => {
+        const idx = cs.findIndex((c) => c.id === activeChat);
+        if (idx === -1) return cs;
+        const cur = cs[idx];
+        const title =
+          cur.title === "New chat"
+            ? text.length > 60
+              ? `${text.slice(0, 60).trimEnd()}…`
+              : text
+            : cur.title;
+        const next = cs.slice();
+        next.splice(idx, 1);
+        return [{ ...cur, title, when: "Today" }, ...next];
+      });
 
       const live = activeDocs();
       if (!live.length) {
@@ -515,62 +585,107 @@ export function useRagWorkspace({
     if (matchesMobile()) setNavOpen(false);
   }, []);
 
+  /** Replace an emptied chat list with a single fresh conversation. */
+  const startFreshChat = useCallback(() => {
+    if (USE_MOCK) {
+      const id = `n${Date.now()}`;
+      setChats([{ id, title: "New chat", when: "Just now" }]);
+      setActiveChat(id);
+      return;
+    }
+    void createConversation()
+      .then((conv) => {
+        setChats([{ id: conv.id, title: conv.title, when: "Today" }]);
+        setActiveChat(conv.id);
+      })
+      .catch(() => {});
+  }, []);
+
   const selectChat = useCallback(
     (id: string) => {
+      if (id === activeChat) {
+        dismissDrawer();
+        return;
+      }
+      reset();
       setActiveChat(id);
       dismissDrawer();
+      if (!USE_MOCK) {
+        getConversation(id)
+          .then((detail) => setMessages(detail.messages.map(apiMsgToMessage)))
+          .catch(() => {});
+      }
     },
-    [dismissDrawer],
+    [activeChat, dismissDrawer, reset],
   );
 
   const newChat = useCallback(() => {
-    const id = `n${Date.now()}`;
-    setChats((c) => [{ id, title: "New chat", when: "Just now" }, ...c]);
-    setActiveChat(id);
     reset();
     dismissDrawer();
+    if (USE_MOCK) {
+      const id = `n${Date.now()}`;
+      setChats((c) => [{ id, title: "New chat", when: "Just now" }, ...c]);
+      setActiveChat(id);
+      return;
+    }
+    void createConversation()
+      .then((conv) => {
+        setChats((c) => [
+          { id: conv.id, title: conv.title, when: "Today" },
+          ...c,
+        ]);
+        setActiveChat(conv.id);
+      })
+      .catch(() => {});
   }, [reset, dismissDrawer]);
 
   const deleteChat = useCallback(
     (id: string) => {
+      if (!USE_MOCK) void deleteConversation(id).catch(() => {});
       const rest = chats.filter((c) => c.id !== id);
       const wasActive = id === activeChat;
       if (rest.length) {
         setChats(rest);
-        if (wasActive) setActiveChat(rest[0].id);
+        if (wasActive) {
+          reset();
+          selectChat(rest[0].id);
+        }
       } else {
-        const nid = `n${Date.now()}`;
-        setChats([{ id: nid, title: "New chat", when: "Just now" }]);
-        setActiveChat(nid);
+        reset();
+        startFreshChat();
       }
-      if (wasActive) reset();
     },
-    [chats, activeChat, reset],
+    [chats, activeChat, reset, selectChat, startFreshChat],
   );
 
   const deleteChats = useCallback(
     (ids: string[]) => {
       if (!ids.length) return;
       const kill = new Set(ids);
+      if (!USE_MOCK) {
+        for (const id of kill) void deleteConversation(id).catch(() => {});
+      }
       const rest = chats.filter((c) => !kill.has(c.id));
       const wasActive = kill.has(activeChat);
       if (rest.length) {
         setChats(rest);
-        if (wasActive) setActiveChat(rest[0].id);
+        if (wasActive) {
+          reset();
+          selectChat(rest[0].id);
+        }
       } else {
-        const nid = `n${Date.now()}`;
-        setChats([{ id: nid, title: "New chat", when: "Just now" }]);
-        setActiveChat(nid);
+        reset();
+        startFreshChat();
       }
-      if (wasActive) reset();
     },
-    [chats, activeChat, reset],
+    [chats, activeChat, reset, selectChat, startFreshChat],
   );
 
   const renameChat = useCallback((id: string, title: string) => {
     const next = title.trim();
     if (!next) return;
     setChats((c) => c.map((x) => (x.id === id ? { ...x, title: next } : x)));
+    if (!USE_MOCK) void renameConversation(id, next).catch(() => {});
   }, []);
 
   const requestDeleteChat = useCallback(

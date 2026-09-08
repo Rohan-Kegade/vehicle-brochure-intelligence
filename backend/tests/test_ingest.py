@@ -41,9 +41,11 @@ def _brochure(path: Path) -> None:
     doc.close()
 
 
-async def _new_document(storage_key: str | None) -> uuid.UUID:
+async def _new_document(user_id: uuid.UUID, storage_key: str | None) -> uuid.UUID:
     async with async_session_maker() as session:
-        doc = Document(title="Test Brochure", tag="SUV", storage_key=storage_key)
+        doc = Document(
+            user_id=user_id, title="Test Brochure", tag="SUV", storage_key=storage_key
+        )
         session.add(doc)
         await session.commit()
         return doc.id
@@ -64,11 +66,11 @@ async def _count_qdrant_points(document_id: uuid.UUID) -> int:
     return result.count
 
 
-async def test_ingest_drives_document_to_ready(cleanup_documents):
+async def test_ingest_drives_document_to_ready(cleanup_documents, test_user):
     storage_dir = Path(get_settings().storage_dir)
     storage_dir.mkdir(parents=True, exist_ok=True)
 
-    doc_id = await _new_document(storage_key=None)
+    doc_id = await _new_document(test_user.id, storage_key=None)
     cleanup_documents.append(doc_id)
 
     key = f"{doc_id}.pdf"
@@ -94,8 +96,8 @@ async def test_ingest_drives_document_to_ready(cleanup_documents):
     assert await _count_qdrant_points(doc_id) == doc.chunk_count
 
 
-async def test_ingest_marks_failed_on_missing_file(cleanup_documents):
-    doc_id = await _new_document(storage_key="does-not-exist.pdf")
+async def test_ingest_marks_failed_on_missing_file(cleanup_documents, test_user):
+    doc_id = await _new_document(test_user.id, storage_key="does-not-exist.pdf")
     cleanup_documents.append(doc_id)
 
     with pytest.raises((FileNotFoundError, RuntimeError)):

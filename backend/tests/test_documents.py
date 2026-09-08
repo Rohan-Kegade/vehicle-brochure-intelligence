@@ -19,7 +19,9 @@ startxref
 """
 
 
-async def test_upload_document_creates_row_and_file(client, cleanup_documents, storage_dir):
+async def test_upload_document_creates_row_and_file(
+    client, cleanup_documents, storage_dir, test_user
+):
     resp = await client.post(
         "/documents",
         files={"file": ("Audi_Q5_2026.pdf", _MINIMAL_PDF, "application/pdf")},
@@ -35,9 +37,30 @@ async def test_upload_document_creates_row_and_file(client, cleanup_documents, s
     assert body["page_count"] == 0
     assert body["chunk_count"] == 0
 
-    stored = Path(storage_dir) / f"{body['id']}.pdf"
+    # PDFs are partitioned by owner: {user_id}/{document_id}.pdf
+    stored = Path(storage_dir) / str(test_user.id) / f"{body['id']}.pdf"
     assert stored.is_file()
     assert stored.read_bytes() == _MINIMAL_PDF
+
+
+async def test_document_requires_authentication(anon_client):
+    resp = await anon_client.get("/documents")
+    assert resp.status_code == 401
+
+
+async def test_delete_document_removes_row(client, storage_dir, test_user):
+    resp = await client.post(
+        "/documents",
+        files={"file": ("Skoda_Octavia.pdf", _MINIMAL_PDF, "application/pdf")},
+    )
+    doc_id = resp.json()["id"]
+    stored = Path(storage_dir) / str(test_user.id) / f"{doc_id}.pdf"
+    assert stored.is_file()
+
+    deleted = await client.delete(f"/documents/{doc_id}")
+    assert deleted.status_code == 204
+    assert not stored.exists()
+    assert (await client.get(f"/documents/{doc_id}")).status_code == 404
 
 
 async def test_upload_document_rejects_non_pdf(client):

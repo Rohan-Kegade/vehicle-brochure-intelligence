@@ -9,7 +9,8 @@ import {
   Trash2,
 } from "lucide-react";
 import type { Chat } from "../types.ts";
-import { ACCOUNT } from "../data.ts";
+import { PLAN_LABEL } from "../data.ts";
+import { initialsFrom, useAuth } from "../lib/auth.tsx";
 
 interface SidebarProps {
   chats: Chat[];
@@ -107,6 +108,7 @@ export function Sidebar({
   onCollapse,
   onRequestDeleteChat,
 }: SidebarProps) {
+  const { user, logout } = useAuth();
   const [menuId, setMenuId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -188,11 +190,13 @@ export function Sidebar({
       <div className="flex-none border-t border-line p-3">
         <div className="flex items-center gap-[10px] pt-1.5 px-1 pb-3">
           <div className="w-[30px] h-[30px] flex-none rounded-full border border-line-4 bg-surface-5 grid place-items-center font-mono text-[11px] text-accent-text-soft">
-            {ACCOUNT.initials}
+            {user ? initialsFrom(user.fullName, user.email) : ""}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[12.5px] truncate">{ACCOUNT.name}</div>
-            <div className="font-mono text-[9.5px] text-text-muted mt-[2px]">{ACCOUNT.plan}</div>
+            <div className="text-[12.5px] truncate">
+              {user?.fullName || user?.email || ""}
+            </div>
+            <div className="font-mono text-[9.5px] text-text-muted mt-[2px]">{PLAN_LABEL}</div>
           </div>
         </div>
         <div className="flex flex-col gap-[3px]">
@@ -200,7 +204,7 @@ export function Sidebar({
             <Settings size={14} strokeWidth={1.7} aria-hidden />
             <span>Settings</span>
           </button>
-          <button className={menuItem}>
+          <button className={menuItem} onClick={() => void logout()}>
             <LogOut size={14} strokeWidth={1.7} aria-hidden />
             <span>Log out</span>
           </button>
