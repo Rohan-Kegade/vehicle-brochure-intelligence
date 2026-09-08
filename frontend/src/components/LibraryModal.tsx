@@ -93,7 +93,7 @@ export function LibraryModal({
         <div className="flex-none px-[18px] pt-[15px]">
           <div className="flex items-center justify-between gap-3 pb-2">
             <div className="text-[13px] font-bold tracking-[0.02em] text-text">
-              Brochure library
+              Brochure Library
             </div>
             <button
               className={`${dialogCloseBase} w-[30px] h-[30px] rounded-[9px] text-[15px]`}

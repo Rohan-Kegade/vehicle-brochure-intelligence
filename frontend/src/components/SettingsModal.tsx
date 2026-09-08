@@ -68,7 +68,7 @@ const SECTIONS: { id: Section; label: string; icon: LucideIcon; blurb: string }[
     },
     {
       id: "data",
-      label: "Manage brochures",
+      label: "Brochures Library Manager",
       icon: Database,
       blurb: "Your uploaded brochures",
     },
@@ -114,16 +114,8 @@ function Profile() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3.5">
-        <div className="w-[52px] h-[52px] flex-none rounded-full border border-line-4 bg-surface-5 grid place-items-center font-mono text-[16px] text-accent-text-soft">
-          {ACCOUNT.initials}
-        </div>
-        <button
-          className="px-3 py-[7px] rounded-[8px] border border-line-4 bg-surface-6 text-text-dim text-[12px] cursor-pointer hover:border-accent hover:text-text"
-          type="button"
-        >
-          Change photo
-        </button>
+      <div className="w-[52px] h-[52px] flex-none rounded-full border border-line-4 bg-surface-5 grid place-items-center font-mono text-[16px] text-accent-text-soft">
+        {ACCOUNT.initials}
       </div>
 
       <label>
@@ -490,7 +482,7 @@ function ManageData({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <div className={sectionTitle}>Manage brochures</div>
+        <div className={sectionTitle}>Brochures Library Manager</div>
         <div className={sectionNote}>
           {uploads.length} of {limit} brochures uploaded
           {atLimit && " · limit reached"}
