@@ -100,12 +100,8 @@ export interface RagWorkspaceModel {
   closeLib: () => void;
   query: string;
   setQuery: (v: string) => void;
-  /** Library scope: everything vs. only the user's own uploads. */
-  scope: "all" | "mine";
-  setScope: (v: "all" | "mine") => void;
-  scopeCounts: { all: number; mine: number };
-  filter: string;
-  setFilter: (v: string) => void;
+  /** How many brochures the user has uploaded (drives the empty state). */
+  uploadCount: number;
   libraryShown: Doc[];
 }
 
@@ -117,8 +113,6 @@ export function useRagWorkspace({
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
-  const [scope, setScope] = useState<"all" | "mine">("mine");
-  const [filter, setFilter] = useState("All");
   const [libOpen, setLibOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(matchesMobile);
   const [navOpen, setNavOpen] = useState(() => !matchesMobile());
@@ -477,11 +471,8 @@ export function useRagWorkspace({
 
   const activeCount = useMemo(() => contextDocs.filter((d) => d.on).length, [contextDocs]);
 
-  const scopeCounts = useMemo(
-    () => ({
-      all: docs.filter((d) => d.source === "sample").length,
-      mine: docs.filter((d) => d.source === "upload").length,
-    }),
+  const uploadCount = useMemo(
+    () => docs.filter((d) => d.source === "upload").length,
     [docs],
   );
 
@@ -489,14 +480,13 @@ export function useRagWorkspace({
     const q = query.trim().toLowerCase();
     return docs.filter(
       (d) =>
-        d.source === (scope === "mine" ? "upload" : "sample") &&
-        (filter === "All" || d.tag === filter) &&
+        d.source === "upload" &&
         (!q ||
           d.title.toLowerCase().includes(q) ||
           d.tag.toLowerCase().includes(q) ||
           d.make.toLowerCase().includes(q)),
     );
-  }, [docs, query, scope, filter]);
+  }, [docs, query]);
 
   const chatResults = useMemo(() => {
     const cq = chatQuery.trim().toLowerCase();
@@ -582,16 +572,10 @@ export function useRagWorkspace({
     closeLib: () => {
       setLibOpen(false);
       setQuery("");
-      setScope("mine");
-      setFilter("All");
     },
     query,
     setQuery,
-    scope,
-    setScope,
-    scopeCounts,
-    filter,
-    setFilter,
+    uploadCount,
     libraryShown,
   };
 }

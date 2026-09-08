@@ -31,9 +31,6 @@ export const INITIAL_DOCS: Doc[] = [
   { id: "d8", title: "Tata_Punch_2026_Brochure.pdf", make: "Tata", tag: "SUV", source: "sample", pages: 30, chunks: 372, on: true, added: false },
 ];
 
-/** Library "Type" filter chips (match the brochure `tag` values). */
-export const LIBRARY_TYPE_FILTERS = ["All", "Hatchback", "SUV", "Sedan", "MUV", "EV"] as const;
-
 /** Filenames cycled through by the Upload button. */
 export const UPLOAD_NAMES = [
   "Honda_Elevate_2026_Brochure.pdf",

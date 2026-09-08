@@ -183,9 +183,7 @@ export function RagWorkspace(props: RagWorkspaceProps) {
       {w.libOpen && (
         <LibraryModal
           query={w.query}
-          scope={w.scope}
-          scopeCounts={w.scopeCounts}
-          filter={w.filter}
+          uploadCount={w.uploadCount}
           shown={w.libraryShown}
           selectedCount={w.activeCount}
           indexing={w.indexing}
@@ -194,8 +192,6 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           indexPct={w.indexPct}
           onUpload={w.upload}
           onQuery={w.setQuery}
-          onScope={w.setScope}
-          onFilter={w.setFilter}
           onToggleAdd={w.toggleAdd}
           onClose={w.closeLib}
         />
