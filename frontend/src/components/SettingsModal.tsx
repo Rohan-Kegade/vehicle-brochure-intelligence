@@ -768,7 +768,7 @@ export function SettingsModal({
         </div>
 
         <div className="flex-1 min-h-0 flex flex-nowrap max-phone:flex-col">
-          <nav className="flex-none w-[200px] flex flex-col gap-[3px] p-2.5 border-r border-line overflow-y-auto max-phone:w-full max-phone:flex-row max-phone:overflow-x-auto max-phone:border-r-0 max-phone:border-b">
+          <nav className="flex-none w-[200px] flex flex-col gap-[3px] p-2.5 border-r border-line overflow-y-auto max-phone:w-full max-phone:flex-row max-phone:gap-1.5 max-phone:overflow-y-hidden max-phone:overflow-x-auto max-phone:border-r-0 max-phone:border-b">
             {SECTIONS.map((s) => {
               const on = s.id === section;
               const Icon = s.icon;
@@ -776,7 +776,7 @@ export function SettingsModal({
                 <button
                   key={s.id}
                   type="button"
-                  className={`flex items-center gap-2.5 w-full text-left px-2.5 py-2 rounded-[9px] text-[12.5px] cursor-pointer max-phone:flex-none ${
+                  className={`flex items-center gap-2.5 w-full text-left px-2.5 py-2 rounded-[9px] text-[12.5px] cursor-pointer max-phone:w-auto max-phone:flex-none max-phone:whitespace-nowrap ${
                     on
                       ? "bg-accent-active text-text"
                       : "bg-transparent text-text-nav hover:bg-surface-4 hover:text-text"
