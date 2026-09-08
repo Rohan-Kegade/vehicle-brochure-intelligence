@@ -210,6 +210,18 @@ export function RagWorkspace(props: RagWorkspaceProps) {
           indexStage={w.indexStage}
           indexPct={w.indexPct}
           uploadLimit={w.uploadLimit}
+          chats={w.chats}
+          activeChatId={w.activeChat}
+          onRenameChat={w.renameChat}
+          onDeleteChats={w.deleteChats}
+          onOpenChat={(id) => {
+            w.selectChat(id);
+            w.closeSettings();
+          }}
+          onNewChat={() => {
+            w.newChat();
+            w.closeSettings();
+          }}
           onClose={w.closeSettings}
         />
       )}

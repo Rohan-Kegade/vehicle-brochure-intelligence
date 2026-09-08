@@ -65,6 +65,10 @@ export interface RagWorkspaceModel {
   activeChatTitle: string;
   /** Remove a chat by id (no confirmation — see requestDeleteChat). */
   deleteChat: (id: string) => void;
+  /** Remove one or more chats at once (Chats manager). */
+  deleteChats: (ids: string[]) => void;
+  /** Rename a conversation (Chats manager). */
+  renameChat: (id: string, title: string) => void;
   /** Chat queued for deletion, driving the confirm modal. */
   pendingDeleteChat: Chat | null;
   requestDeleteChat: (id: string) => void;
@@ -544,6 +548,31 @@ export function useRagWorkspace({
     [chats, activeChat, reset],
   );
 
+  const deleteChats = useCallback(
+    (ids: string[]) => {
+      if (!ids.length) return;
+      const kill = new Set(ids);
+      const rest = chats.filter((c) => !kill.has(c.id));
+      const wasActive = kill.has(activeChat);
+      if (rest.length) {
+        setChats(rest);
+        if (wasActive) setActiveChat(rest[0].id);
+      } else {
+        const nid = `n${Date.now()}`;
+        setChats([{ id: nid, title: "New chat", when: "Just now" }]);
+        setActiveChat(nid);
+      }
+      if (wasActive) reset();
+    },
+    [chats, activeChat, reset],
+  );
+
+  const renameChat = useCallback((id: string, title: string) => {
+    const next = title.trim();
+    if (!next) return;
+    setChats((c) => c.map((x) => (x.id === id ? { ...x, title: next } : x)));
+  }, []);
+
   const requestDeleteChat = useCallback(
     (id: string) => setPendingDeleteId(id),
     [],
@@ -618,6 +647,8 @@ export function useRagWorkspace({
     retrievalMode,
     activeChatTitle,
     deleteChat,
+    deleteChats,
+    renameChat,
     pendingDeleteChat,
     requestDeleteChat,
     confirmDeleteChat,

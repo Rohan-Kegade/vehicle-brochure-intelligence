@@ -14,7 +14,7 @@ interface ChatSearchModalProps {
 export function ChatSearchModal({ query, results, onQuery, onPick, onClose }: ChatSearchModalProps) {
   return (
     <div
-      className={`${overlay} z-[70] bg-overlay items-start pt-[60px] px-6 pb-6 max-phone:px-3 max-phone:pt-4 max-phone:pb-3`}
+      className={`${overlay} z-[70] bg-overlay items-start pt-[15vh] px-6 pb-6 max-phone:px-3 max-phone:pt-[9vh] max-phone:pb-3`}
       onClick={onClose}
     >
       <div

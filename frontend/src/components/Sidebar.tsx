@@ -151,23 +151,21 @@ export function Sidebar({
           <Plus size={15} strokeWidth={2} aria-hidden />
           <span>New chat</span>
         </button>
-        <button
-          className="flex items-center gap-[9px] px-[11px] py-[9px] border border-line-3 rounded-[10px] bg-transparent text-text-dim text-[13px] cursor-pointer hover:border-line-hover hover:text-text"
-          onClick={onOpenChatSearch}
-        >
-          <Search
-            size={14}
-            strokeWidth={1.8}
-            className="text-accent-text"
-            aria-hidden
-          />
-          <span>Search chats</span>
-        </button>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-3" ref={listRef}>
-        <div className="font-mono text-[9.5px] tracking-[0.12em] text-text-muted px-[3px] pb-2">
-          RECENT CHATS
+        <div className="flex items-center justify-between px-[3px] pb-2">
+          <span className="font-mono text-[9.5px] tracking-[0.12em] text-text-muted">
+            RECENT CHATS
+          </span>
+          <button
+            className="flex-none grid place-items-center w-[22px] h-[22px] rounded-[6px] text-text-faint cursor-pointer hover:bg-surface-4 hover:text-text"
+            title="Search chats"
+            aria-label="Search chats"
+            onClick={onOpenChatSearch}
+          >
+            <Search size={13} strokeWidth={1.8} aria-hidden />
+          </button>
         </div>
         <div className="flex flex-col gap-[3px]">
           {chats.map((c) => (

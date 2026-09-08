@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import {
   Check as CheckIcon,
   Database,
+  MessageSquare,
+  MessagesSquare,
   Minus,
   MoreVertical,
   Palette,
   Pencil,
+  Plus,
   Search,
   ShieldCheck,
   Trash2,
@@ -15,7 +18,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Theme } from "../lib/useTheme.ts";
-import type { Doc } from "../types.ts";
+import type { Chat, Doc } from "../types.ts";
 import { ACCOUNT } from "../data.ts";
 import {
   dialog,
@@ -47,10 +50,17 @@ interface SettingsModalProps {
   indexPct: number;
   /** Upload cap for the library. */
   uploadLimit: number;
+  /** Conversations + handlers for the Chats manager section. */
+  chats: Chat[];
+  activeChatId: string;
+  onRenameChat: (id: string, title: string) => void;
+  onDeleteChats: (ids: string[]) => void;
+  onOpenChat: (id: string) => void;
+  onNewChat: () => void;
   onClose: () => void;
 }
 
-type Section = "profile" | "appearance" | "data" | "account";
+type Section = "profile" | "appearance" | "data" | "chats" | "account";
 
 const SECTIONS: { id: Section; label: string; icon: LucideIcon; blurb: string }[] =
   [
@@ -71,6 +81,12 @@ const SECTIONS: { id: Section; label: string; icon: LucideIcon; blurb: string }[
       label: "Brochures Library Manager",
       icon: Database,
       blurb: "Your uploaded brochures",
+    },
+    {
+      id: "chats",
+      label: "Chats Manager",
+      icon: MessagesSquare,
+      blurb: "Rename or remove conversations",
     },
     {
       id: "account",
@@ -726,6 +742,341 @@ function ManageData({
   );
 }
 
+/** Chats manager — search, rename, open, and (multi-)delete conversations.
+ * Deletes go through the same confirmation modal as the brochure list. */
+function ManageChats({
+  chats,
+  activeId,
+  onRename,
+  onDelete,
+  onOpen,
+  onNewChat,
+}: {
+  chats: Chat[];
+  activeId: string;
+  onRename: (id: string, title: string) => void;
+  onDelete: (ids: string[]) => void;
+  onOpen: (id: string) => void;
+  onNewChat: () => void;
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [editId, setEditId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [confirmIds, setConfirmIds] = useState<string[] | null>(null);
+  const [q, setQ] = useState("");
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  const needle = q.trim().toLowerCase();
+  const shown = needle
+    ? chats.filter((c) => c.title.toLowerCase().includes(needle))
+    : chats;
+
+  // Drop selection entries for chats that no longer exist (post-delete).
+  useEffect(() => {
+    setSelected((cur) => {
+      const live = new Set(chats.map((c) => c.id));
+      const next = new Set([...cur].filter((id) => live.has(id)));
+      return next.size === cur.size ? cur : next;
+    });
+  }, [chats]);
+
+  // Row menu: dismiss on outside click / Esc.
+  useEffect(() => {
+    if (!menuId) return;
+    const onDown = (e: MouseEvent) => {
+      if (listRef.current && !listRef.current.contains(e.target as Node))
+        setMenuId(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuId(null);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuId]);
+
+  // While the confirm modal is up, swallow Esc so it doesn't also close Settings.
+  useEffect(() => {
+    if (!confirmIds) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopImmediatePropagation();
+        setConfirmIds(null);
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [confirmIds]);
+
+  const toggleSel = (id: string) =>
+    setSelected((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const allSelected = shown.length > 0 && shown.every((c) => selected.has(c.id));
+  const toggleAll = () =>
+    setSelected((cur) => {
+      const next = new Set(cur);
+      if (allSelected) shown.forEach((c) => next.delete(c.id));
+      else shown.forEach((c) => next.add(c.id));
+      return next;
+    });
+
+  const startEdit = (c: Chat) => {
+    setMenuId(null);
+    setDraft(c.title);
+    setEditId(c.id);
+  };
+  const commit = () => {
+    if (editId && draft.trim()) onRename(editId, draft);
+    setEditId(null);
+  };
+
+  const runDelete = () => {
+    if (confirmIds) onDelete(confirmIds);
+    setConfirmIds(null);
+    setSelected(new Set());
+  };
+
+  const bulk = (confirmIds?.length ?? 0) > 1;
+  const firstTitle =
+    confirmIds && !bulk
+      ? (chats.find((c) => c.id === confirmIds[0])?.title ?? "This chat")
+      : "";
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <div className={sectionTitle}>Chats Manager</div>
+        <div className={sectionNote}>
+          {chats.length} conversation{chats.length === 1 ? "" : "s"}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0 flex items-center gap-[9px] border border-line-input rounded-[11px] bg-surface-1 px-[13px] focus-within:border-line-input-focus">
+            <Search
+              size={14}
+              strokeWidth={1.8}
+              className="flex-none text-text-ghost"
+              aria-hidden
+            />
+            <input
+              className="flex-1 min-w-0 bg-transparent border-0 outline-none text-text text-[13.5px] py-[10px] max-phone:text-base"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search chats by name…"
+            />
+          </div>
+          <button
+            type="button"
+            className="flex-none grid place-items-center w-[40px] h-[40px] rounded-[10px] border border-line-input bg-surface-1 text-accent-text cursor-pointer transition-colors duration-[160ms] hover:border-accent hover:text-text-hi"
+            title="New chat"
+            aria-label="New chat"
+            onClick={onNewChat}
+          >
+            <Plus size={15} strokeWidth={2} aria-hidden />
+          </button>
+        </div>
+
+        {chats.length === 0 ? (
+          <div className="px-3.5 py-6 text-center text-[13px] text-text-ghost border border-dashed border-line-3 rounded-[12px]">
+            No conversations yet.
+          </div>
+        ) : shown.length === 0 ? (
+          <div className={modalEmpty}>No chats match your search.</div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-3 px-1 min-h-[28px]">
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={
+                  allSelected ? true : selected.size > 0 ? "mixed" : false
+                }
+                className="group flex items-center gap-2 font-mono text-[10.5px] text-accent-text-soft tracking-[0.06em] cursor-pointer hover:text-text"
+                onClick={toggleAll}
+              >
+                <Check
+                  on={allSelected}
+                  mixed={!allSelected && selected.size > 0}
+                />
+                <span>
+                  {selected.size > 0
+                    ? `${selected.size} selected · ${allSelected ? "clear" : "select all"}`
+                    : "select all"}
+                </span>
+              </button>
+              {selected.size > 0 && (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-[6px] rounded-[8px] border border-danger bg-surface-6 text-[12px] text-danger cursor-pointer hover:bg-danger/10"
+                  onClick={() => setConfirmIds([...selected])}
+                >
+                  <TrashIcon />
+                  <span>Delete</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2" ref={listRef}>
+              {shown.map((c) => {
+                const isSel = selected.has(c.id);
+                const editing = editId === c.id;
+                return (
+                  <div
+                    key={c.id}
+                    className={`flex items-center gap-3 w-full px-3.5 py-[13px] border rounded-[12px] transition-colors duration-[140ms] ${
+                      isSel
+                        ? "border-accent-line bg-accent-tint-2"
+                        : "border-line-card bg-surface-3 hover:border-line-4"
+                    }`}
+                  >
+                    {editing ? (
+                      <>
+                        <input
+                          autoFocus
+                          className={`${field} flex-1 min-w-0`}
+                          value={draft}
+                          onChange={(e) => setDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commit();
+                            if (e.key === "Escape") setEditId(null);
+                          }}
+                        />
+                        <button
+                          className={`${rowBtn} hover:border-accent hover:text-text`}
+                          type="button"
+                          onClick={() => setEditId(null)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="flex-none px-2.5 py-[7px] rounded-[8px] bg-accent text-accent-ink text-[12px] font-semibold cursor-pointer hover:bg-accent-bright"
+                          type="button"
+                          onClick={commit}
+                        >
+                          Save
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={isSel}
+                          aria-label={
+                            isSel ? `Deselect ${c.title}` : `Select ${c.title}`
+                          }
+                          className="group flex-none grid place-items-center cursor-pointer"
+                          onClick={() => toggleSel(c.id)}
+                        >
+                          <Check on={isSel} />
+                        </button>
+                        <button
+                          type="button"
+                          className="flex flex-1 min-w-0 flex-col items-start text-left cursor-pointer"
+                          onClick={() => onOpen(c.id)}
+                        >
+                          <span className="block w-full text-[13.5px] text-text-soft truncate">
+                            {c.title}
+                          </span>
+                          <span className="block font-mono text-[10px] text-text-ghost mt-[5px] tracking-[0.04em]">
+                            {c.id === activeId ? "Open now · " : ""}
+                            {c.when}
+                          </span>
+                        </button>
+
+                        <div className="flex-none relative">
+                          <button
+                            type="button"
+                            className="grid place-items-center w-7 h-7 rounded-[7px] text-text-faint text-[13px] leading-none cursor-pointer hover:bg-surface-6 hover:text-text"
+                            title="More"
+                            aria-haspopup="menu"
+                            aria-expanded={menuId === c.id}
+                            onClick={() =>
+                              setMenuId((cur) => (cur === c.id ? null : c.id))
+                            }
+                          >
+                            <MoreVertical size={15} strokeWidth={1.9} aria-hidden />
+                          </button>
+                          {menuId === c.id && (
+                            <div
+                              role="menu"
+                              className="absolute right-0 top-[calc(100%+4px)] z-10 w-[144px] rounded-[10px] border border-line-3 bg-surface-2 shadow-dialog p-1 animate-fadein"
+                            >
+                              <button
+                                role="menuitem"
+                                type="button"
+                                className="flex items-center gap-2 w-full text-left px-2.5 py-2 rounded-[7px] text-[12.5px] text-text-nav cursor-pointer hover:bg-surface-4 hover:text-text"
+                                onClick={() => {
+                                  setMenuId(null);
+                                  onOpen(c.id);
+                                }}
+                              >
+                                <MessageSquare size={13} strokeWidth={1.9} aria-hidden />
+                                <span>Open</span>
+                              </button>
+                              <button
+                                role="menuitem"
+                                type="button"
+                                className="flex items-center gap-2 w-full text-left px-2.5 py-2 rounded-[7px] text-[12.5px] text-text-nav cursor-pointer hover:bg-surface-4 hover:text-text"
+                                onClick={() => startEdit(c)}
+                              >
+                                <Pencil size={13} strokeWidth={1.9} aria-hidden />
+                                <span>Rename</span>
+                              </button>
+                              <button
+                                role="menuitem"
+                                type="button"
+                                className="flex items-center gap-2 w-full text-left px-2.5 py-2 rounded-[7px] text-[12.5px] text-danger cursor-pointer hover:bg-surface-4"
+                                onClick={() => {
+                                  setMenuId(null);
+                                  setConfirmIds([c.id]);
+                                }}
+                              >
+                                <TrashIcon />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {confirmIds && (
+        <ConfirmModal
+          title={bulk ? `Delete ${confirmIds.length} chats?` : "Delete chat?"}
+          message={
+            bulk
+              ? `${confirmIds.length} conversations and their messages will be permanently removed. This can't be undone.`
+              : `“${firstTitle}” and its messages will be permanently removed. This can't be undone.`
+          }
+          confirmLabel={bulk ? `Delete ${confirmIds.length}` : "Delete"}
+          destructive
+          onConfirm={runDelete}
+          onClose={() => setConfirmIds(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 /** Account settings — a left nav (Profile / Appearance / Manage brochures / Account)
  * beside the matching panel. Mock: nothing here is persisted except the theme. */
 export function SettingsModal({
@@ -740,6 +1091,12 @@ export function SettingsModal({
   indexStage,
   indexPct,
   uploadLimit,
+  chats,
+  activeChatId,
+  onRenameChat,
+  onDeleteChats,
+  onOpenChat,
+  onNewChat,
   onClose,
 }: SettingsModalProps) {
   const [section, setSection] = useState<Section>("profile");
@@ -811,6 +1168,16 @@ export function SettingsModal({
                 indexStg={indexStage}
                 indexPct={indexPct}
                 limit={uploadLimit}
+              />
+            )}
+            {section === "chats" && (
+              <ManageChats
+                chats={chats}
+                activeId={activeChatId}
+                onRename={onRenameChat}
+                onDelete={onDeleteChats}
+                onOpen={onOpenChat}
+                onNewChat={onNewChat}
               />
             )}
             {section === "account" && <Account onClose={onClose} />}
