@@ -170,20 +170,28 @@ export function Sidebar({
           </button>
         </div>
         <div className="flex flex-col gap-[3px]">
-          {chats.map((c) => (
-            <ChatRow
-              key={c.id}
-              chat={c}
-              active={c.id === activeChat}
-              menuOpen={menuId === c.id}
-              onSelect={() => onSelectChat(c.id)}
-              onToggleMenu={() => setMenuId((cur) => (cur === c.id ? null : c.id))}
-              onRequestDelete={() => {
-                setMenuId(null);
-                onRequestDeleteChat(c.id);
-              }}
-            />
-          ))}
+          {chats.length === 0 ? (
+            <p className="px-[3px] py-1 text-[12px] leading-relaxed text-text-muted">
+              No chats yet. Send a message and this conversation shows up here.
+            </p>
+          ) : (
+            chats.map((c) => (
+              <ChatRow
+                key={c.id}
+                chat={c}
+                active={c.id === activeChat}
+                menuOpen={menuId === c.id}
+                onSelect={() => onSelectChat(c.id)}
+                onToggleMenu={() =>
+                  setMenuId((cur) => (cur === c.id ? null : c.id))
+                }
+                onRequestDelete={() => {
+                  setMenuId(null);
+                  onRequestDeleteChat(c.id);
+                }}
+              />
+            ))
+          )}
         </div>
       </div>
 

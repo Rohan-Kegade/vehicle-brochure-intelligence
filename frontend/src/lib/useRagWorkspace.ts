@@ -20,7 +20,6 @@ import {
   type DocStatus,
   USE_MOCK,
   apiDocToDoc,
-  createConversation,
   deleteConversation,
   getDocument,
   getConversation,
@@ -236,15 +235,11 @@ export function useRagWorkspace({
           /* backend offline — leave the library empty */
         });
 
-      // Load the user's conversations; open the most recent, or start one.
+      // Load the user's conversations and open the most recent. A fresh account
+      // (or "New chat") opens on an unsaved draft — no row, no sidebar entry
+      // until the first message is sent.
       listConversations()
-        .then(async (list) => {
-          if (list.length === 0) {
-            const conv = await createConversation();
-            setChats([{ id: conv.id, title: conv.title, when: "Today" }]);
-            setActiveChat(conv.id);
-            return;
-          }
+        .then((list) => {
           setChats(
             list.map((c) => ({
               id: c.id,
@@ -252,7 +247,7 @@ export function useRagWorkspace({
               when: relativeDay(c.updated_at),
             })),
           );
-          setActiveChat((cur) => cur || list[0].id);
+          setActiveChat((cur) => cur || (list[0]?.id ?? ""));
         })
         .catch(() => {
           /* backend offline — sidebar stays empty */
@@ -302,22 +297,25 @@ export function useRagWorkspace({
       setMessages((m) => m.concat([{ role: "me", paras: [text] }]));
       setDraft("");
 
-      // First question in an untitled chat: mirror the backend's auto-title and
-      // float the conversation to the top of the list.
-      setChats((cs) => {
-        const idx = cs.findIndex((c) => c.id === activeChat);
-        if (idx === -1) return cs;
-        const cur = cs[idx];
-        const title =
-          cur.title === "New chat"
-            ? text.length > 60
-              ? `${text.slice(0, 60).trimEnd()}…`
-              : text
-            : cur.title;
-        const next = cs.slice();
-        next.splice(idx, 1);
-        return [{ ...cur, title, when: "Today" }, ...next];
-      });
+      // First question in an existing untitled chat: mirror the backend's
+      // auto-title and float it to the top. A draft (no `activeChat`) has no
+      // row yet — it's created by the stream's `conversation` event below.
+      if (activeChat) {
+        setChats((cs) => {
+          const idx = cs.findIndex((c) => c.id === activeChat);
+          if (idx === -1) return cs;
+          const cur = cs[idx];
+          const title =
+            cur.title === "New chat"
+              ? text.length > 60
+                ? `${text.slice(0, 60).trimEnd()}…`
+                : text
+              : cur.title;
+          const next = cs.slice();
+          next.splice(idx, 1);
+          return [{ ...cur, title, when: "Today" }, ...next];
+        });
+      }
 
       const live = activeDocs();
       if (!live.length) {
@@ -353,13 +351,27 @@ export function useRagWorkspace({
       };
 
       void streamMessage(
-        activeChat,
+        activeChat || null,
         {
           content: text,
           mode: retrievalMode,
           documentIds: live.map((d) => d.id),
         },
         {
+          onConversation: (id, title) => {
+            // Draft just became a real conversation — adopt its id and show it
+            // in the sidebar for the first time.
+            setActiveChat(id);
+            setChats((cs) => [
+              { id, title, when: "Today" },
+              ...cs.filter((c) => c.id !== id),
+            ]);
+          },
+          onTitle: (id, title) => {
+            setChats((cs) =>
+              cs.map((c) => (c.id === id ? { ...c, title } : c)),
+            );
+          },
           onToken: (t) => {
             acc += t;
             setTyping(false);
@@ -585,7 +597,7 @@ export function useRagWorkspace({
     if (matchesMobile()) setNavOpen(false);
   }, []);
 
-  /** Replace an emptied chat list with a single fresh conversation. */
+  /** Drop back to an unsaved draft chat (e.g. after the last chat is deleted). */
   const startFreshChat = useCallback(() => {
     if (USE_MOCK) {
       const id = `n${Date.now()}`;
@@ -593,12 +605,8 @@ export function useRagWorkspace({
       setActiveChat(id);
       return;
     }
-    void createConversation()
-      .then((conv) => {
-        setChats([{ id: conv.id, title: conv.title, when: "Today" }]);
-        setActiveChat(conv.id);
-      })
-      .catch(() => {});
+    setChats([]);
+    setActiveChat("");
   }, []);
 
   const selectChat = useCallback(
@@ -628,15 +636,8 @@ export function useRagWorkspace({
       setActiveChat(id);
       return;
     }
-    void createConversation()
-      .then((conv) => {
-        setChats((c) => [
-          { id: conv.id, title: conv.title, when: "Today" },
-          ...c,
-        ]);
-        setActiveChat(conv.id);
-      })
-      .catch(() => {});
+    // Draft only — no row and no sidebar entry until the first message.
+    setActiveChat("");
   }, [reset, dismissDrawer]);
 
   const deleteChat = useCallback(
@@ -699,6 +700,7 @@ export function useRagWorkspace({
   }, [pendingDeleteId, deleteChat]);
 
   const shareChat = useCallback(() => {
+    if (!activeChat) return; // nothing to share on an unsaved draft
     const url = `${window.location.origin}/chat/${activeChat}`;
     void window.navigator?.clipboard?.writeText(url).catch(() => {});
     setShareCopied(true);

@@ -63,6 +63,75 @@ def build_prompt(question: str, chunks: list[RetrievedChunk]) -> str:
     )
 
 
+def _pretty_title(title: str) -> str:
+    return title.removesuffix(".pdf").replace("_", " ").strip()
+
+
+_TITLE_PROMPT = (
+    "You label chat conversations about vehicle brochures. Given the user's "
+    "first question and the brochure(s) it is grounded in, reply with a concise "
+    "3-6 word title in Title Case. When the vehicle is known, name it (make and "
+    "model) in the title. Reply with the title only — no surrounding quotes, no "
+    "trailing punctuation, no preamble."
+)
+
+
+def _vehicle_names(chunks: list[RetrievedChunk] | None) -> list[str]:
+    """Distinct brochure names behind the retrieved passages, retrieval order."""
+    names: list[str] = []
+    for chunk in chunks or []:
+        name = _pretty_title(chunk.document_title)
+        if name and name not in names:
+            names.append(name)
+    return names
+
+
+def _message_text(message: object) -> str:
+    """Plain text of an LLM reply. Gemini 3.x with thinking on returns
+    ``content`` as a list of typed blocks (text + thinking/signature), so a bare
+    ``str(content)`` would leak ``[{'type': 'text', ...}]`` into the caller."""
+    content = getattr(message, "content", "")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and isinstance(block.get("text"), str):
+                parts.append(block["text"])
+        return "".join(parts)
+    return ""
+
+
+async def generate_title(
+    question: str,
+    chunks: list[RetrievedChunk] | None = None,
+    *,
+    llm: ChatGoogleGenerativeAI | None = None,
+) -> str:
+    """A short LLM-written title for a conversation's first message.
+
+    ``chunks`` (the passages retrieved for that first question) let the title
+    name the vehicle even when the question itself doesn't ("how quick is it?").
+    Returns ``""`` on any failure so callers can fall back to a trimmed question.
+    """
+    llm = llm or _llm()
+
+    human = f"First question: {question.strip()[:2000]}"
+    vehicles = _vehicle_names(chunks)
+    if vehicles:
+        human = f"Brochure(s) in context: {', '.join(vehicles[:3])}\n{human}"
+
+    try:
+        reply = await llm.ainvoke(
+            [SystemMessage(content=_TITLE_PROMPT), HumanMessage(content=human)]
+        )
+    except Exception:
+        return ""
+    return " ".join(_message_text(reply).split()).strip().strip("\"'")[:80]
+
+
 async def stream_answer(
     question: str,
     chunks: list[RetrievedChunk],
@@ -78,10 +147,6 @@ async def stream_answer(
         text = chunk.text
         if text:
             yield str(text)
-
-
-def _pretty_title(title: str) -> str:
-    return title.removesuffix(".pdf").replace("_", " ").strip()
 
 
 def collect_citations(

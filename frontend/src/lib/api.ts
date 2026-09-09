@@ -186,11 +186,22 @@ export interface StreamHandlers {
   onCitations: (citations: string[]) => void;
   onDone: () => void;
   onError: (detail: string) => void;
+  /** New-conversation stream only: the row was just created server-side. */
+  onConversation?: (id: string, title: string) => void;
+  /** New-conversation stream only: the LLM-generated title is ready. */
+  onTitle?: (id: string, title: string) => void;
 }
 
-/** POST a question and dispatch the SSE `token` / `citations` / `done` / `error` events. */
+/**
+ * POST a question and dispatch the SSE `conversation` / `token` / `citations` /
+ * `title` / `done` / `error` events.
+ *
+ * Pass `null` for `conversationId` to start a brand-new conversation — the row
+ * is created server-side on this first message and its id arrives via the
+ * `conversation` event.
+ */
 export async function streamMessage(
-  conversationId: string,
+  conversationId: string | null,
   body: { content: string; mode: string; documentIds?: string[] },
   handlers: StreamHandlers,
   signal?: AbortSignal,
@@ -199,8 +210,12 @@ export async function streamMessage(
   const token = csrfToken();
   if (token) headers["x-csrf-token"] = token;
 
+  const path = conversationId
+    ? `/conversations/${encodeURIComponent(conversationId)}/messages`
+    : "/conversations/messages";
+
   const res = await fetch(
-    `${API_BASE}/conversations/${encodeURIComponent(conversationId)}/messages`,
+    `${API_BASE}${path}`,
     {
       method: "POST",
       headers,
@@ -243,7 +258,13 @@ function dispatchFrame(frame: string, h: StreamHandlers): void {
   }
   if (!data) return;
 
-  let payload: { text?: string; citations?: string[]; detail?: string };
+  let payload: {
+    text?: string;
+    citations?: string[];
+    detail?: string;
+    id?: string;
+    title?: string;
+  };
   try {
     payload = JSON.parse(data);
   } catch {
@@ -252,6 +273,9 @@ function dispatchFrame(frame: string, h: StreamHandlers): void {
 
   if (event === "token") h.onToken(payload.text ?? "");
   else if (event === "citations") h.onCitations(payload.citations ?? []);
+  else if (event === "conversation")
+    h.onConversation?.(payload.id ?? "", payload.title ?? "");
+  else if (event === "title") h.onTitle?.(payload.id ?? "", payload.title ?? "");
   else if (event === "done") h.onDone();
   else if (event === "error") h.onError(payload.detail ?? "unknown error");
 }

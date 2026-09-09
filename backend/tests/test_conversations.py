@@ -38,7 +38,9 @@ async def conversation(test_user) -> AsyncIterator[Conversation]:
 def patch_pipeline(monkeypatch):
     """Stub retrieval + generation so the SSE endpoint runs offline."""
 
-    def _install(chunks: list[RetrievedChunk], answer: str) -> None:
+    def _install(
+        chunks: list[RetrievedChunk], answer: str, title: str = "Generated Title"
+    ) -> None:
         async def _fake_retrieve(*_args, **_kwargs) -> list[RetrievedChunk]:
             return chunks
 
@@ -46,8 +48,12 @@ def patch_pipeline(monkeypatch):
             for word in answer.split(" "):
                 yield word + " "
 
+        async def _fake_title(*_args, **_kwargs) -> str:
+            return title
+
         monkeypatch.setattr("app.api.conversations.retrieve", _fake_retrieve)
         monkeypatch.setattr("app.api.conversations.stream_answer", _fake_stream)
+        monkeypatch.setattr("app.api.conversations.generate_title", _fake_title)
 
     return _install
 
@@ -109,6 +115,53 @@ async def test_message_without_context_is_honest(client, conversation, patch_pip
     assert "don't have any indexed brochure content" in body
     assert '"citations": []' in body
     assert "event: done" in body
+
+
+async def test_start_conversation_creates_row_and_llm_title(client, patch_pipeline):
+    patch_pipeline(
+        [_chunk("Aurora_GT.pdf", 8, "0-60 in 4.2 s.")],
+        "It does 0-60 in 4.2 seconds.",
+        title="Aurora GT Acceleration",
+    )
+
+    before = await client.get("/conversations")
+    assert before.json() == []
+
+    resp = await client.post(
+        "/conversations/messages",
+        json={"content": "How quick is it?", "mode": "Balanced"},
+    )
+    assert resp.status_code == 200
+    body = resp.text
+    assert "event: conversation" in body
+    assert "event: token" in body
+    assert "event: citations" in body
+    assert "event: title" in body
+    assert "Aurora GT Acceleration" in body
+    assert "event: done" in body
+
+    listing = (await client.get("/conversations")).json()
+    assert len(listing) == 1
+    assert listing[0]["title"] == "Aurora GT Acceleration"
+
+    detail = (await client.get(f"/conversations/{listing[0]['id']}")).json()
+    assert [m["role"] for m in detail["messages"]] == ["user", "assistant"]
+    assert detail["messages"][0]["content"] == "How quick is it?"
+
+
+async def test_start_conversation_without_context_still_persists(client, patch_pipeline):
+    patch_pipeline([], "unused", title="Unknown Vehicle Query")
+
+    resp = await client.post(
+        "/conversations/messages",
+        json={"content": "Tell me about a car we never indexed."},
+    )
+    assert resp.status_code == 200
+    assert "don't have any indexed brochure content" in resp.text
+
+    listing = (await client.get("/conversations")).json()
+    assert len(listing) == 1
+    assert listing[0]["title"] == "Unknown Vehicle Query"
 
 
 async def test_message_on_unknown_conversation_is_404(client, patch_pipeline):
